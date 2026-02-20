@@ -90,19 +90,43 @@ const Clients: React.FC<ClientsProps> = ({ content }) => {
                      onMouseEnter={() => setHoveredPartnerId(partner.id)}
                      onMouseLeave={() => setHoveredPartnerId(null)}
                      onClick={() => setSelectedPartner(partner)}
-                     className="group relative h-[400px] bg-[#08090B] border border-white/10 rounded-sm p-8 overflow-hidden cursor-none flex flex-col justify-between hover:border-authomia-blue/40 transition-colors duration-500 preserve-3d"
+                     className={`group relative h-[400px] bg-[#08090B] border rounded-sm p-8 overflow-hidden cursor-none flex flex-col justify-between transition-colors duration-500 preserve-3d ${
+                        partner.borderColor === 'red' ? 'border-authomia-red/50 hover:border-authomia-red' :
+                        partner.borderColor === 'blue' ? 'border-authomia-blue/50 hover:border-authomia-blue' :
+                        partner.borderColor === 'green' ? 'border-green-500/50 hover:border-green-500' :
+                        partner.borderColor === 'gold' ? 'border-yellow-500/50 hover:border-yellow-500' :
+                        'border-white/10 hover:border-white/40'
+                     }`}
                   >
-                     <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                     <div className={`absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${
+                        partner.borderColor === 'red' ? 'from-authomia-red/10 to-transparent' :
+                        partner.borderColor === 'blue' ? 'from-authomia-blue/10 to-transparent' :
+                        partner.borderColor === 'green' ? 'from-green-500/10 to-transparent' :
+                        partner.borderColor === 'gold' ? 'from-yellow-500/10 to-transparent' :
+                        'from-white/5 to-transparent'
+                     }`} />
                      
                      <div className="relative z-10">
                         {/* Company Title */}
                         <div className="mb-6">
                            <h3 className="text-lg font-bold font-mono text-white mb-1 tracking-wide">{partner.companyName}</h3>
-                           <p className="text-xs text-authomia-blueLight font-mono uppercase tracking-widest">{partner.personName}</p>
+                           <p className={`text-xs font-mono uppercase tracking-widest ${
+                              partner.borderColor === 'red' ? 'text-authomia-redLight' :
+                              partner.borderColor === 'blue' ? 'text-authomia-blueLight' :
+                              partner.borderColor === 'green' ? 'text-green-400' :
+                              partner.borderColor === 'gold' ? 'text-yellow-400' :
+                              'text-white/50'
+                           }`}>{partner.personName}</p>
                         </div>
 
                         {/* Profile Image */}
-                        <div className="w-20 h-20 rounded-full border-2 border-white/10 overflow-hidden mb-6 shadow-2xl group-hover:scale-105 transition-transform duration-500 group-hover:border-authomia-blue/50">
+                        <div className={`w-20 h-20 rounded-full border-2 overflow-hidden mb-6 shadow-2xl group-hover:scale-105 transition-transform duration-500 ${
+                           partner.borderColor === 'red' ? 'border-authomia-red/30 group-hover:border-authomia-red' :
+                           partner.borderColor === 'blue' ? 'border-authomia-blue/30 group-hover:border-authomia-blue' :
+                           partner.borderColor === 'green' ? 'border-green-500/30 group-hover:border-green-500' :
+                           partner.borderColor === 'gold' ? 'border-yellow-500/30 group-hover:border-yellow-500' :
+                           'border-white/10 group-hover:border-white/50'
+                        }`}>
                            <img src={partner.image} alt={partner.personName} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
                         </div>
 

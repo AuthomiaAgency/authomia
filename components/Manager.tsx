@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Save, Trash2, Plus, LogOut, FileText, Users, BarChart2, ExternalLink, Link, Image as ImageIcon, Send } from 'lucide-react';
+import { Lock, Save, Trash2, Plus, LogOut, FileText, Users, BarChart2, ExternalLink, Link, Image as ImageIcon, Send, ArrowRight, Palette } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- TYPES ---
@@ -54,6 +54,7 @@ interface Survey {
 // --- COMPONENT ---
 const Manager: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'partners' | 'publications' | 'surveys'>('partners');
@@ -99,24 +100,42 @@ const Manager: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'M@xCB_2026') {
+    if (email === 'authomia.agency@gmail.com' && password === 'M@xCB_2026') {
       setIsAuthenticated(true);
       sessionStorage.setItem('authomia_manager_auth', 'true');
     } else {
-      setError('Access Denied.');
+      setError('Access Denied. Invalid credentials.');
     }
   };
 
   if (!isAuthenticated) {
     return (
-       <div className="min-h-screen bg-[#020202] flex items-center justify-center p-6">
-        <div className="w-full max-w-md bg-[#050505] border border-white/10 p-8 rounded-sm shadow-2xl">
-          <div className="flex justify-center mb-8"><Lock className="w-8 h-8 text-authomia-blue" /></div>
-          <h1 className="text-xl font-mono text-center text-white mb-8">AUTHOMIA MANAGER</h1>
+       <div className="min-h-screen bg-[#020202] flex items-center justify-center p-6 relative overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(10,16,158,0.1)_0%,transparent_50%)] pointer-events-none" />
+        
+        <div className="w-full max-w-md bg-[#050505]/80 backdrop-blur-xl border border-white/10 p-8 rounded-sm shadow-2xl relative z-10">
+          <div className="flex justify-center mb-8">
+             <div className="p-4 rounded-full bg-white/5 border border-white/10 animate-pulse">
+                <Lock className="w-8 h-8 text-authomia-blueLight" />
+             </div>
+          </div>
+          <h1 className="text-xl font-mono text-center text-white mb-2 tracking-widest">AUTHOMIA MANAGER</h1>
+          <p className="text-xs text-center text-white/40 font-mono mb-8 uppercase tracking-widest">Restricted Access</p>
+          
           <form onSubmit={handleLogin} className="space-y-4">
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Security Key" className="w-full bg-white/5 border border-white/10 p-3 text-white font-mono focus:border-authomia-blue outline-none" />
-            {error && <p className="text-red-500 text-xs text-center">{error}</p>}
-            <button type="submit" className="w-full bg-authomia-blue text-white py-3 font-mono text-sm tracking-widest hover:bg-authomia-blueLight transition-colors">AUTHENTICATE</button>
+            <div>
+               <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest mb-2 block">Authorized Email</label>
+               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@authomia.com" className="w-full bg-white/5 border border-white/10 p-3 text-white font-mono focus:border-authomia-blueLight outline-none transition-colors" />
+            </div>
+            <div>
+               <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest mb-2 block">Security Key</label>
+               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-white/5 border border-white/10 p-3 text-white font-mono focus:border-authomia-blueLight outline-none transition-colors" />
+            </div>
+            {error && <p className="text-red-500 text-xs text-center font-mono bg-red-500/10 py-2 border border-red-500/20">{error}</p>}
+            <button type="submit" className="w-full bg-authomia-blue text-white py-4 mt-4 font-mono text-sm tracking-widest hover:bg-authomia-blueLight transition-all flex items-center justify-center gap-2">
+               AUTHENTICATE <ArrowRight size={16} />
+            </button>
           </form>
         </div>
       </div>
@@ -169,6 +188,21 @@ const Manager: React.FC = () => {
                       <input className="w-full bg-white/5 border border-white/10 p-2 text-white" placeholder="Image URL" value={editingPartner.image} onChange={e => setEditingPartner({...editingPartner, image: e.target.value})} />
                       <textarea className="w-full bg-white/5 border border-white/10 p-2 text-white h-32" placeholder="Full Bio / Story" value={editingPartner.bio} onChange={e => setEditingPartner({...editingPartner, bio: e.target.value})} />
                       <input className="w-full bg-white/5 border border-white/10 p-2 text-white" placeholder="Website" value={editingPartner.website} onChange={e => setEditingPartner({...editingPartner, website: e.target.value})} />
+                      
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Border Color</label>
+                         <div className="flex gap-2">
+                            {['white', 'red', 'blue', 'green', 'gold'].map(color => (
+                               <button 
+                                 key={color}
+                                 onClick={() => setEditingPartner({...editingPartner, borderColor: color as any})}
+                                 className={`w-8 h-8 rounded-full border-2 ${editingPartner.borderColor === color ? 'border-white scale-110' : 'border-transparent opacity-50 hover:opacity-100'} transition-all`}
+                                 style={{ backgroundColor: color === 'white' ? '#ffffff' : color === 'red' ? '#B30A0A' : color === 'blue' ? '#0A109E' : color === 'green' ? '#10B981' : '#FFD700' }}
+                               />
+                            ))}
+                         </div>
+                      </div>
+
                       <button onClick={() => { 
                          const exists = partners.find(p => p.id === editingPartner.id);
                          const newPartners = exists ? partners.map(p => p.id === editingPartner.id ? editingPartner : p) : [...partners, editingPartner];
@@ -216,9 +250,15 @@ const Manager: React.FC = () => {
                                   {block.type === 'text' && <textarea className="w-full bg-transparent border-none outline-none text-white h-24 resize-none" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Type text content..." />}
                                   {block.type === 'image' && <input className="w-full bg-transparent border-b border-white/10 outline-none text-white" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Image URL..." />}
                                   {block.type === 'button' && (
-                                     <div className="grid grid-cols-2 gap-2">
-                                        <input className="bg-transparent border-b border-white/10 outline-none text-white" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Button Label" />
-                                        <input className="bg-transparent border-b border-white/10 outline-none text-white" value={block.extra || ''} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].extra = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Target URL" />
+                                     <div className="grid grid-cols-1 gap-2">
+                                        <div className="grid grid-cols-2 gap-2">
+                                           <input className="bg-transparent border-b border-white/10 outline-none text-white p-2" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Button Label" />
+                                           <input className="bg-transparent border-b border-white/10 outline-none text-white p-2" value={block.extra || ''} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].extra = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Target URL" />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 mt-2">
+                                           <input className="bg-transparent border-b border-white/10 outline-none text-white p-2 text-xs" value={block.buttonColor || ''} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].buttonColor = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Color (e.g. #FF0000 or red-500)" />
+                                           <input className="bg-transparent border-b border-white/10 outline-none text-white p-2 text-xs" value={block.icon || ''} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].icon = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Icon Name (e.g. ArrowRight)" />
+                                        </div>
                                      </div>
                                   )}
                                </div>

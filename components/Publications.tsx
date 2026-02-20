@@ -89,11 +89,21 @@ const Publications: React.FC = () => {
                        )}
                        {block.type === 'button' && (
                           <div className="py-8 flex justify-center">
-                             <a href={block.extra} target="_blank" rel="noreferrer" className="group relative px-8 py-4 bg-authomia-blue text-white font-mono text-sm tracking-widest overflow-hidden rounded-full">
+                             <a 
+                               href={block.extra} 
+                               target="_blank" 
+                               rel="noreferrer" 
+                               className="group relative px-8 py-4 font-mono text-sm tracking-widest overflow-hidden rounded-full transition-all hover:scale-105"
+                               style={{ backgroundColor: block.buttonColor || '#0A109E', color: '#ffffff' }}
+                             >
                                 <div className="absolute inset-0 bg-white/20 group-hover:bg-white/40 transition-colors" />
                                 <div className="absolute inset-0 rounded-full ring-2 ring-white/50 animate-pulse" />
                                 <span className="relative z-10 flex items-center gap-3">
-                                   {block.content} <ArrowRight size={16} />
+                                   {block.content} 
+                                   {block.icon === 'ArrowRight' && <ArrowRight size={16} />}
+                                   {block.icon === 'Lock' && <Lock size={16} />}
+                                   {block.icon === 'Calendar' && <Calendar size={16} />}
+                                   {!block.icon && <ArrowRight size={16} />}
                                 </span>
                              </a>
                           </div>
@@ -112,6 +122,11 @@ const Publications: React.FC = () => {
     <div className="min-h-screen bg-[#050505] text-white pt-20 px-6 overflow-hidden relative">
        
        {/* Sophisticated Header */}
+       <div className="absolute top-8 left-8 z-20">
+          <a href="/" className="flex items-center gap-2 text-white/50 hover:text-white transition-colors text-xs font-mono uppercase tracking-widest">
+             <ArrowLeft size={14} /> Volver al Inicio
+          </a>
+       </div>
        <div className="flex justify-center mb-16 relative z-10">
           <motion.img 
             initial={{ opacity: 0, scale: 0.8 }}
@@ -139,9 +154,12 @@ const Publications: React.FC = () => {
                    <Lock className="w-6 h-6 text-white/20" />
                 </div>
                 <h3 className="text-lg font-mono text-white/40 mb-2">NO DATA STREAMS</h3>
-                <p className="text-xs text-white/20 font-light max-w-sm text-center">
-                   La base de conocimientos se está compilando. Espere transmisión de protocolos.
+                <p className="text-xs text-white/20 font-light max-w-sm text-center mb-8">
+                   No hay nada nuevo aquí, vuelve más tarde. La base de conocimientos se está compilando.
                 </p>
+                <a href="/" className="px-6 py-3 border border-white/10 text-white/50 hover:text-white hover:border-white/30 transition-all font-mono text-xs uppercase tracking-widest flex items-center gap-2">
+                   <ArrowLeft size={14} /> Volver al Inicio
+                </a>
              </div>
           ) : (
             // GRID STATE

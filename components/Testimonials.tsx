@@ -36,9 +36,12 @@ const Testimonials: React.FC<TestimonialsProps> = ({ content }) => {
               </div>
               
               <h3 className="text-xl font-mono text-white tracking-tight">{content.voidTitle}</h3>
-              <p className="text-sm text-white/40 max-w-lg leading-relaxed font-light">
+              <p className="text-sm text-white/40 max-w-lg leading-relaxed font-light mb-8">
                  {content.voidDesc}
               </p>
+
+              {/* Trustindex Widget */}
+              <div className="w-full max-w-3xl mx-auto mb-8 relative z-20" src='https://cdn.trustindex.io/loader.js?c1944fc653ab348af1969151da0'></div>
 
               <button className="mt-4 px-6 py-3 border border-white/20 text-white/60 font-mono text-xs uppercase tracking-widest hover:bg-white hover:text-black hover:border-white transition-all duration-300 flex items-center gap-3">
                  <MessageSquarePlus className="w-3 h-3" />

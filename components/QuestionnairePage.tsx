@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowRight, Check, AlertCircle, Building2, User, Instagram, Linkedin, Globe, Facebook, Twitter, MessageCircle, Youtube, Mail, Ticket, Sparkles, Diamond, ArrowUpCircle, ArrowLeft, Github, Share2, Send } from 'lucide-react';
+import { X, ArrowRight, Check, AlertCircle, Building2, User, Instagram, Linkedin, Globe, Facebook, Twitter, MessageCircle, Youtube, Mail, Diamond, ArrowUpCircle, ArrowLeft, Github, Send, Sparkles, Cpu, Layers, Zap, Shield, Code, Database, Globe2 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 
 // --- CONFIG ---
@@ -18,7 +18,7 @@ interface FormData {
   phoneCode: string;
   phoneNumber: string;
   projectType: ProjectType | null;
-  businessName: string; // Separated for better data capture
+  businessName: string;
   industry: string;
   socials: string[];
   pillar: string;
@@ -54,20 +54,39 @@ const INDUSTRIES = [
   "Seguros", "Textil & Moda", "Otro"
 ];
 
-// --- PARTICLE EFFECT (Simple CSS based) ---
-const SparklesEffect = () => {
+// --- AESTHETIC BACKGROUND ---
+const FloatingIconsBackground = () => {
+  const icons = [Cpu, Layers, Zap, Shield, Code, Database, Globe2, Diamond];
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-      {Array.from({ length: 30 }).map((_, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, y: 100, x: Math.random() * window.innerWidth }}
-          animate={{ opacity: [0, 1, 0], y: -100, x: Math.random() * window.innerWidth }}
-          transition={{ duration: Math.random() * 2 + 1, repeat: Infinity, delay: Math.random() * 2 }}
-          className="absolute bottom-0 w-1 h-1 bg-yellow-400 rounded-full shadow-[0_0_10px_gold]"
-          style={{ left: `${Math.random() * 100}%` }}
-        />
-      ))}
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 opacity-10">
+      {Array.from({ length: 20 }).map((_, i) => {
+        const Icon = icons[i % icons.length];
+        return (
+          <motion.div
+            key={i}
+            initial={{ 
+              opacity: 0, 
+              y: Math.random() * window.innerHeight, 
+              x: Math.random() * window.innerWidth,
+              rotate: 0 
+            }}
+            animate={{ 
+              opacity: [0, 0.5, 0], 
+              y: [null, Math.random() * window.innerHeight - 100],
+              x: [null, Math.random() * window.innerWidth + 100],
+              rotate: 360
+            }}
+            transition={{ 
+              duration: Math.random() * 20 + 10, 
+              repeat: Infinity, 
+              ease: "linear" 
+            }}
+            className="absolute text-white"
+          >
+            <Icon size={Math.random() * 40 + 20} />
+          </motion.div>
+        );
+      })}
     </div>
   );
 };
@@ -75,6 +94,7 @@ const SparklesEffect = () => {
 const QuestionnairePage: React.FC = () => {
   const [step, setStep] = useState(0);
   const [plan, setPlan] = useState<Plan>('blue');
+  const [showUpsell, setShowUpsell] = useState(false);
   const [data, setData] = useState<FormData>({
     fullName: '',
     email: '',
@@ -93,34 +113,24 @@ const QuestionnairePage: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
   
-  // Initialize Plan from URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const p = params.get('plan');
     if (p === 'red') setPlan('red');
-    else setPlan('blue'); // Default
+    else setPlan('blue');
   }, []);
 
-  // Promo Logic: If Project Type is "project", activate festive mode
-  const isPromo = data.projectType === 'project';
-  
-  // Dynamic Pricing Ranges
   const getBudgetRanges = () => {
     if (plan === 'blue') {
-      const ranges = ["$100 - $300 USD", "$300 - $600 USD", "+ $600 USD"];
-      if (isPromo) return ["$20 USD (Cupón 'Slot Génesis')", ...ranges];
-      return ranges;
+      return ["$100 - $300 USD", "$300 - $600 USD", "+ $600 USD"];
     } else {
-      const ranges = ["$800 - $1,500 USD", "$1,500 - $3,000 USD", "$3,000 - $5,000 USD", "+ $5,000 USD (Enterprise)"];
-      if (isPromo) return ["$100 USD (Cupón 'Slot Génesis')", ...ranges];
-      return ranges;
+      return ["$800 - $1,500 USD", "$1,500 - $3,000 USD", "$3,000 - $5,000 USD", "+ $5,000 USD (Enterprise)"];
     }
   };
 
   const handleNext = () => {
     setError('');
-    // Validation
-    if (step === 0) { // Identity
+    if (step === 0) {
       if (!data.fullName || !data.email || !data.phoneNumber) {
         setError("Todos los campos de identidad son obligatorios.");
         return;
@@ -130,7 +140,7 @@ const QuestionnairePage: React.FC = () => {
         return;
       }
     }
-    if (step === 1) { // Context
+    if (step === 1) {
       if (!data.projectType) {
          setError("Selecciona el tipo de entidad.");
          return;
@@ -149,9 +159,9 @@ const QuestionnairePage: React.FC = () => {
       return;
     }
 
-    // Upsell Logic
+    // Trigger Upsell Modal if Blue Plan and moving from Budget (Step 4) to Message (Step 5)
     if (step === 4 && plan === 'blue') {
-      setStep(5); // Go to Upsell
+      setShowUpsell(true);
       return;
     }
 
@@ -162,28 +172,14 @@ const QuestionnairePage: React.FC = () => {
     if (accept) {
       setPlan('red');
     }
-    setStep(6);
+    setShowUpsell(false);
+    setStep(5); // Move to Message step
   };
 
   const handleBack = () => {
     if (step === 0) {
-      window.location.href = '/'; // Go back home
+      window.location.href = '/';
       return;
-    }
-    if (step === 6) { // If at Message step
-       if (plan === 'red' || plan === 'blue') { 
-          // Check if we came from Upsell (Step 5)
-          // If the user *was* Blue originally, they passed through Step 5.
-          // If they accepted upsell, they are now Red.
-          // We need to know if they came from upsell. 
-          // Simplification: If current step is 6, go back to 5 ONLY if we were offering upsell (Blue originally). 
-          // But state 'plan' might have changed.
-          // Safer bet: Go back to 4 (Budget).
-          setStep(4);
-          // If they accepted upsell, revert plan to Blue for logic consistency? 
-          // Or keep as Red? Let's go to 4.
-          return;
-       }
     }
     setStep(prev => prev - 1);
   };
@@ -197,11 +193,7 @@ const QuestionnairePage: React.FC = () => {
     if (lower.includes('youtube')) return <Youtube size={16} className="text-[#FF0000]" />;
     if (lower.includes('whatsapp')) return <MessageCircle size={16} className="text-[#25D366]" />;
     if (lower.includes('github')) return <Github size={16} className="text-white" />;
-    if (lower.includes('pinterest')) return <span className="text-red-500 font-bold text-xs">P</span>;
     if (lower.includes('telegram')) return <Send size={16} className="text-blue-400" />;
-    if (lower.includes('tiktok')) return <span className="text-pink-500 font-bold text-xs">Tk</span>;
-    if (lower.includes('behance')) return <span className="text-blue-500 font-bold text-xs">Be</span>;
-    if (lower.includes('dribbble')) return <span className="text-pink-400 font-bold text-xs">Dr</span>;
     if (lower.includes('@')) return <Mail size={16} className="text-yellow-500" />;
     return <Globe size={16} className="text-authomia-blueLight" />;
   };
@@ -247,48 +239,79 @@ const QuestionnairePage: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center p-4 md:p-8 ${isPromo ? 'bg-[#0f0b05]' : 'bg-[#020202]'} transition-colors duration-1000 relative overflow-hidden`}>
+    <div className="min-h-screen flex items-center justify-center p-4 md:p-8 bg-[#020202] transition-colors duration-1000 relative overflow-hidden">
       
       {/* Background Ambience */}
-      <div className={`absolute inset-0 opacity-20 pointer-events-none transition-colors duration-1000 ${isPromo ? 'bg-gradient-to-br from-yellow-900/40 via-black to-red-900/40' : (plan === 'blue' ? 'bg-gradient-to-br from-authomia-blue/20 via-black to-black' : 'bg-gradient-to-br from-authomia-red/20 via-black to-black')}`} />
+      <div className={`absolute inset-0 opacity-20 pointer-events-none transition-colors duration-1000 ${plan === 'blue' ? 'bg-gradient-to-br from-authomia-blue/20 via-black to-black' : 'bg-gradient-to-br from-authomia-red/20 via-black to-black'}`} />
       
-      {/* Particles for Promo */}
-      {isPromo && <SparklesEffect />}
+      <FloatingIconsBackground />
 
       {/* Close Button */}
       <a href="/" className="fixed top-8 right-8 z-50 p-3 bg-white/5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
         <X size={24} />
       </a>
 
+      {/* Upsell Modal */}
+      <AnimatePresence>
+        {showUpsell && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-[#08090B] border border-authomia-red/30 p-8 rounded-sm max-w-md w-full shadow-[0_0_50px_rgba(179,10,10,0.15)] relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-authomia-red to-authomia-redLight" />
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-full border border-authomia-red/50 flex items-center justify-center mb-6 bg-authomia-red/10 animate-pulse">
+                  <ArrowUpCircle size={32} className="text-authomia-redLight" />
+                </div>
+                <h3 className="text-2xl font-light text-white mb-3">Escalar a Red Diamond</h3>
+                <p className="text-sm text-white/60 leading-relaxed mb-8">
+                  Con <strong>Red Diamond Prime™</strong>, el costo del diagnóstico es <span className="text-authomia-redLight font-bold">BONIFICADO 100%</span> al implementar la arquitectura.
+                </p>
+                <div className="w-full space-y-3">
+                  <button onClick={() => handleUpsellDecision(true)} className="w-full py-4 bg-authomia-red text-white font-mono text-xs tracking-widest hover:bg-authomia-redLight transition-colors rounded-sm flex items-center justify-center gap-2">
+                    SÍ, ESCALAR A RED DIAMOND <Sparkles size={14} />
+                  </button>
+                  <button onClick={() => handleUpsellDecision(false)} className="w-full py-3 bg-transparent text-white/40 font-mono text-xs hover:text-white transition-colors">
+                    No, mantener Diagnóstico Blue
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main Card */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-3xl bg-[#08090B] border border-white/10 rounded-sm shadow-2xl relative overflow-hidden flex flex-col min-h-[600px] z-10"
+        className="w-full max-w-3xl bg-[#08090B]/90 backdrop-blur-xl border border-white/10 rounded-sm shadow-2xl relative overflow-hidden flex flex-col min-h-[600px] z-10"
       >
         {/* Progress Bar */}
         <div className="w-full h-1 bg-white/5">
           <motion.div 
-            className={`h-full ${plan === 'blue' ? 'bg-authomia-blueLight' : 'bg-authomia-redLight'} ${isPromo ? 'bg-gradient-to-r from-yellow-400 to-red-500' : ''}`}
+            className={`h-full ${plan === 'blue' ? 'bg-authomia-blueLight' : 'bg-authomia-redLight'}`}
             initial={{ width: 0 }}
-            animate={{ width: `${((step + 1) / 7) * 100}%` }}
+            animate={{ width: `${((step + 1) / 6) * 100}%` }}
           />
         </div>
 
         {/* Header */}
-        <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-[#050505] relative z-20">
+        <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-[#050505]/80 relative z-20">
            <div className="flex items-center gap-3">
               <Diamond className={`w-4 h-4 ${plan === 'blue' ? 'text-authomia-blueLight' : 'text-authomia-redLight'}`} />
               <span className={`text-xs font-mono uppercase tracking-[0.2em] ${plan === 'blue' ? 'text-authomia-blueLight' : 'text-authomia-redLight'}`}>
                  {plan === 'blue' ? "Blue Diamond Prime™" : "Red Diamond Prime™"}
               </span>
            </div>
-           {isPromo && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-full animate-pulse">
-                 <Sparkles size={10} className="text-yellow-500" />
-                 <span className="text-[9px] font-mono text-yellow-500 uppercase tracking-widest">Promo Activa</span>
-              </div>
-           )}
         </div>
 
         {/* Content */}
@@ -353,12 +376,11 @@ const QuestionnairePage: React.FC = () => {
                            <div className="p-4 rounded-full bg-authomia-red/20 text-authomia-redLight"><Building2 size={32} /></div>
                            <h3 className="text-lg font-medium">Empresa Activa</h3>
                         </button>
-                        <button onClick={() => setData({...data, projectType: 'project'})} className={`p-8 border rounded-sm flex flex-col items-center justify-center gap-4 transition-all duration-300 ${data.projectType === 'project' ? 'bg-yellow-500/10 border-yellow-500 text-yellow-500' : 'bg-[#050505] border-white/10 text-white/50 hover:border-yellow-500/50 hover:bg-yellow-500/5'}`}>
+                        <button onClick={() => setData({...data, projectType: 'project'})} className={`p-8 border rounded-sm flex flex-col items-center justify-center gap-4 transition-all duration-300 ${data.projectType === 'project' ? 'bg-authomia-blue/20 border-authomia-blue text-authomia-blueLight' : 'bg-[#050505] border-white/10 text-white/50 hover:border-authomia-blue/50 hover:bg-authomia-blue/5'}`}>
                            <div className="p-4 rounded-full bg-white/10 text-white"><User size={32} /></div>
                            <h3 className="text-lg font-medium">Nuevo Proyecto</h3>
                         </button>
                      </div>
-                     {/* Expanded Fields */}
                      <div className="space-y-6 pt-4">
                         <div className="group">
                            <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest mb-2 block">Nombre de Empresa o Negocio</label>
@@ -411,45 +433,20 @@ const QuestionnairePage: React.FC = () => {
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
                      <div><h2 className="text-3xl font-light text-white mb-2">Inversión</h2><p className="text-white/40 text-sm">Paso 05 — Rango de inversión estimada.</p></div>
                      <div className="space-y-3">
-                        {getBudgetRanges().map((range, idx) => {
-                           const isPromoOption = isPromo && range.includes('Cupón');
-                           return (
-                              <button key={idx} onClick={() => setData({...data, budget: range})} className={`w-full text-left py-4 px-6 border rounded-sm flex justify-between items-center group transition-all duration-300 ${data.budget === range ? (isPromoOption ? 'bg-yellow-500/20 border-yellow-500 shadow-[0_0_20px_rgba(255,215,0,0.2)]' : (plan === 'blue' ? 'bg-authomia-blue/20 border-authomia-blue' : 'bg-authomia-red/20 border-authomia-red')) : 'bg-transparent border-white/10 hover:bg-white/5 hover:border-white/30'}`}>
-                                 <span className={`font-mono text-sm ${data.budget === range ? 'text-white font-bold' : 'text-white/70'}`}>{range}</span>
-                                 {data.budget === range && <div className={`w-2 h-2 rounded-full ${isPromoOption ? 'bg-yellow-500' : 'bg-white'} animate-pulse`} />}
-                                 {isPromoOption && <Ticket size={16} className="text-yellow-500" />}
-                              </button>
-                           );
-                        })}
-                     </div>
-                     <AnimatePresence>
-                        {isPromo && data.budget.includes('Cupón') && (
-                           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-sm mt-4">
-                              <p className="text-[10px] text-yellow-500/80 font-mono leading-relaxed mb-2 flex gap-2"><AlertCircle size={12} className="shrink-0 mt-0.5" /> DISCLAIMER PROMOCIONAL:</p>
-                              <p className="text-xs text-white/60 font-light leading-relaxed mb-4">La complejidad técnica será proporcional al valor del cupón. Costos de terceros (Hosting, APIs, Credenciales) se cotizan por separado.</p>
-                              <div className="flex gap-2"><div className="px-2 py-1 bg-white/10 rounded text-[9px] font-mono text-white/50">3 CUPONES RESTANTES</div></div>
-                           </motion.div>
-                        )}
-                     </AnimatePresence>
-                  </motion.div>
-               )}
-
-               {/* STEP 5: UPSELL */}
-               {step === 5 && plan === 'blue' && (
-                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-8 flex flex-col items-center justify-center text-center py-8">
-                     <div className="w-20 h-20 rounded-full border-2 border-authomia-red flex items-center justify-center shadow-[0_0_40px_rgba(179,10,10,0.5)] animate-pulse-slow"><ArrowUpCircle size={40} className="text-authomia-redLight" /></div>
-                     <div><h2 className="text-3xl font-light text-white mb-4">Escalar a Red Diamond</h2><p className="text-white/60 text-sm max-w-md mx-auto leading-relaxed">Con <strong>Red Diamond Prime™</strong>, el costo del diagnóstico es <span className="text-authomia-redLight font-bold">BONIFICADO 100%</span>.</p></div>
-                     <div className="grid grid-cols-1 w-full gap-4 mt-8">
-                        <button onClick={() => handleUpsellDecision(true)} className="w-full py-4 bg-authomia-red text-white font-mono text-sm tracking-widest hover:bg-authomia-redLight transition-colors rounded-sm shadow-lg flex items-center justify-center gap-2">SÍ, CAMBIAR A RED DIAMOND <Sparkles size={14} /></button>
-                        <button onClick={() => handleUpsellDecision(false)} className="w-full py-4 bg-transparent border border-white/10 text-white/40 font-mono text-xs hover:text-white hover:border-white/30 transition-colors rounded-sm">No, mantener Diagnóstico</button>
+                        {getBudgetRanges().map((range, idx) => (
+                           <button key={idx} onClick={() => setData({...data, budget: range})} className={`w-full text-left py-4 px-6 border rounded-sm flex justify-between items-center group transition-all duration-300 ${data.budget === range ? (plan === 'blue' ? 'bg-authomia-blue/20 border-authomia-blue' : 'bg-authomia-red/20 border-authomia-red') : 'bg-transparent border-white/10 hover:bg-white/5 hover:border-white/30'}`}>
+                              <span className={`font-mono text-sm ${data.budget === range ? 'text-white font-bold' : 'text-white/70'}`}>{range}</span>
+                              {data.budget === range && <div className="w-2 h-2 rounded-full bg-white animate-pulse" />}
+                           </button>
+                        ))}
                      </div>
                   </motion.div>
                )}
 
-               {/* STEP 6: MESSAGE */}
-               {step === 6 && (
+               {/* STEP 5: MESSAGE */}
+               {step === 5 && (
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
-                     <div><h2 className="text-3xl font-light text-white mb-2">Mensaje</h2><p className="text-white/40 text-sm">Objetivos o visión actual.</p></div>
+                     <div><h2 className="text-3xl font-light text-white mb-2">Mensaje</h2><p className="text-white/40 text-sm">Paso 06 — Objetivos o visión actual.</p></div>
                      <textarea autoFocus className="w-full h-32 bg-[#050505] border border-white/10 p-4 text-white outline-none focus:border-white/30 resize-none rounded-sm" placeholder="Escribe aquí..." value={data.message} onChange={e => setData({...data, message: e.target.value})} />
                      <div className="flex items-start gap-4 p-4 border border-white/5 bg-white/[0.02] rounded-sm cursor-pointer" onClick={() => setData({...data, agreed: !data.agreed})}>
                         <div className={`w-5 h-5 border rounded flex items-center justify-center transition-colors ${data.agreed ? 'bg-authomia-blue border-authomia-blue' : 'border-white/30'}`}>{data.agreed && <Check size={14} className="text-white" />}</div>
@@ -462,11 +459,11 @@ const QuestionnairePage: React.FC = () => {
 
           {/* Footer Nav */}
           {!isSuccess && (
-             <div className="mt-12 pt-6 border-t border-white/5 flex justify-between items-center bg-[#08090B] relative z-20">
+             <div className="mt-12 pt-6 border-t border-white/5 flex justify-between items-center bg-[#08090B]/80 relative z-20">
                 <button onClick={handleBack} className="text-xs font-mono text-white/30 hover:text-white flex items-center gap-2 uppercase tracking-widest"><ArrowLeft size={14} /> Atrás</button>
-                {step === 6 ? (
+                {step === 5 ? (
                    <button onClick={handleSubmit} disabled={isSubmitting} className={`px-8 py-3 font-mono text-sm font-bold uppercase tracking-widest rounded-sm flex items-center gap-2 transition-all ${isSubmitting ? 'bg-white/10 text-white/30 cursor-wait' : 'bg-gradient-to-r from-authomia-blue to-authomia-red hover:brightness-110 text-white shadow-lg'}`}>{isSubmitting ? 'ENVIANDO...' : 'ENVIAR SOLICITUD'} <ArrowRight size={16} /></button>
-                ) : step !== 5 && (
+                ) : (
                    <button onClick={handleNext} className="px-8 py-3 bg-white/5 border border-white/10 text-white font-mono text-sm uppercase tracking-widest hover:bg-white hover:text-black transition-all rounded-sm flex items-center gap-2">CONTINUAR <ArrowRight size={16} /></button>
                 )}
              </div>
