@@ -168,6 +168,13 @@ const App: React.FC = () => {
              </button>
           )}
 
+          {/* Quality Assurance Disclaimer */}
+          <div className="mt-16 max-w-2xl mx-auto px-4">
+             <p className="text-[10px] md:text-xs font-mono text-white/30 uppercase tracking-widest leading-relaxed">
+                * Para garantizar la excelencia operativa y la precisión estratégica, Authomia limita su capacidad mensual a <span className="text-authomia-redLight">1 proyecto Red Diamond</span> y <span className="text-authomia-blueLight">4 proyectos Blue Diamond</span>. La calidad no es negociable.
+             </p>
+          </div>
+
           {/* Trust Indicators */}
           <div className="flex justify-center gap-12 mt-20 opacity-30">
              <div className="flex flex-col items-center gap-2">

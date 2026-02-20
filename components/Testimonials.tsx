@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Content } from '../types';
-import { Quote, Radio, MessageSquarePlus, Star } from 'lucide-react';
+import { Quote, Radio, MessageSquarePlus, Star, Facebook } from 'lucide-react';
 
 interface TestimonialsProps {
   content: Content['testimonials'];
@@ -35,15 +35,27 @@ const Testimonials: React.FC<TestimonialsProps> = ({ content }) => {
                  <div className="w-full" src='https://cdn.trustindex.io/loader.js?c1944fc653ab348af1969151da0'></div>
               </div>
 
-              <a 
-                href="https://www.trustindex.io/reviews/authomia.cloud" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="mt-4 px-8 py-3 bg-[#00b67a] text-white font-sans font-medium text-sm rounded-md hover:bg-[#00a06b] transition-all duration-300 flex items-center gap-3 shadow-[0_0_20px_rgba(0,182,122,0.2)] hover:shadow-[0_0_30px_rgba(0,182,122,0.4)] hover:-translate-y-1"
-              >
-                 <Star className="w-4 h-4 fill-white" />
-                 Escribir una reseña en Trustindex
-              </a>
+              <div className="flex flex-col md:flex-row gap-4">
+                 <a 
+                   href="https://www.trustindex.io/reviews/authomia.cloud" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="px-8 py-3 bg-[#00b67a] text-white font-sans font-medium text-sm rounded-md hover:bg-[#00a06b] transition-all duration-300 flex items-center gap-3 shadow-[0_0_20px_rgba(0,182,122,0.2)] hover:shadow-[0_0_30px_rgba(0,182,122,0.4)] hover:-translate-y-1"
+                 >
+                    <Star className="w-4 h-4 fill-white" />
+                    Escribir una reseña en Trustindex
+                 </a>
+
+                 <a 
+                   href="https://www.facebook.com/authomia" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="px-8 py-3 bg-[#1877F2] text-white font-sans font-medium text-sm rounded-md hover:bg-[#166fe5] transition-all duration-300 flex items-center gap-3 shadow-[0_0_20px_rgba(24,119,242,0.2)] hover:shadow-[0_0_30px_rgba(24,119,242,0.4)] hover:-translate-y-1"
+                 >
+                    <Facebook className="w-4 h-4 fill-white" />
+                    Escribir una opinión en Facebook
+                 </a>
+              </div>
            </div>
         </motion.div>
       </div>
