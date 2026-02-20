@@ -11,7 +11,9 @@ interface Partner {
   image: string;
   website: string;
   bio: string;
-  socials: { linkedin?: string; twitter?: string; instagram?: string; };
+  borderColor?: 'white' | 'red' | 'blue' | 'green' | 'gold';
+  socialLinks: string[]; // Array of full URLs
+  customButtons?: { label: string; url: string; color?: string }[];
 }
 
 interface PublicationBlock {
@@ -176,7 +178,7 @@ const Manager: React.FC = () => {
              {/* List */}
              <div className="space-y-4">
                 <button 
-                  onClick={() => setEditingPartner({ id: Date.now().toString(), companyName: 'New Company', personName: '', quote: '', image: '', website: '', bio: '', socials: {} })}
+                  onClick={() => setEditingPartner({ id: Date.now().toString(), companyName: 'New Company', personName: '', quote: '', image: '', website: '', bio: '', borderColor: 'white', socialLinks: [], customButtons: [] })}
                   className="w-full py-4 border border-dashed border-white/20 text-white/50 hover:text-white hover:border-white/50 flex items-center justify-center gap-2 font-mono text-xs uppercase"
                 >
                   <Plus className="w-4 h-4" /> Add Partner
@@ -212,8 +214,90 @@ const Manager: React.FC = () => {
                       </div>
 
                       <textarea className="w-full bg-white/5 border border-white/10 p-2 text-white h-32" placeholder="Full Bio / Story" value={editingPartner.bio} onChange={e => setEditingPartner({...editingPartner, bio: e.target.value})} />
-                      <input className="w-full bg-white/5 border border-white/10 p-2 text-white" placeholder="Website" value={editingPartner.website} onChange={e => setEditingPartner({...editingPartner, website: e.target.value})} />
+                      <input className="w-full bg-white/5 border border-white/10 p-2 text-white" placeholder="Website (Optional - leaves empty if none)" value={editingPartner.website} onChange={e => setEditingPartner({...editingPartner, website: e.target.value})} />
                       
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Social Media Links</label>
+                         <div className="space-y-2">
+                            {editingPartner.socialLinks?.map((link, idx) => (
+                               <div key={idx} className="flex gap-2">
+                                  <input 
+                                    className="flex-1 bg-white/5 border border-white/10 p-2 text-white text-xs" 
+                                    placeholder="https://instagram.com/..." 
+                                    value={link} 
+                                    onChange={e => {
+                                       const newLinks = [...(editingPartner.socialLinks || [])];
+                                       newLinks[idx] = e.target.value;
+                                       setEditingPartner({...editingPartner, socialLinks: newLinks});
+                                    }} 
+                                  />
+                                  <button 
+                                    onClick={() => {
+                                       const newLinks = [...(editingPartner.socialLinks || [])];
+                                       newLinks.splice(idx, 1);
+                                       setEditingPartner({...editingPartner, socialLinks: newLinks});
+                                    }}
+                                    className="p-2 bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-500 transition-colors"
+                                  >
+                                     <Trash2 size={14} />
+                                  </button>
+                               </div>
+                            ))}
+                            <button 
+                              onClick={() => setEditingPartner({...editingPartner, socialLinks: [...(editingPartner.socialLinks || []), '']})}
+                              className="text-xs font-mono text-authomia-blueLight hover:text-white flex items-center gap-1"
+                            >
+                               <Plus size={12} /> Add Social Link
+                            </button>
+                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Custom Action Buttons</label>
+                         <div className="space-y-2">
+                            {editingPartner.customButtons?.map((btn, idx) => (
+                               <div key={idx} className="flex gap-2">
+                                  <input 
+                                    className="w-1/3 bg-white/5 border border-white/10 p-2 text-white text-xs" 
+                                    placeholder="Label" 
+                                    value={btn.label} 
+                                    onChange={e => {
+                                       const newBtns = [...(editingPartner.customButtons || [])];
+                                       newBtns[idx].label = e.target.value;
+                                       setEditingPartner({...editingPartner, customButtons: newBtns});
+                                    }} 
+                                  />
+                                  <input 
+                                    className="flex-1 bg-white/5 border border-white/10 p-2 text-white text-xs" 
+                                    placeholder="Target URL" 
+                                    value={btn.url} 
+                                    onChange={e => {
+                                       const newBtns = [...(editingPartner.customButtons || [])];
+                                       newBtns[idx].url = e.target.value;
+                                       setEditingPartner({...editingPartner, customButtons: newBtns});
+                                    }} 
+                                  />
+                                  <button 
+                                    onClick={() => {
+                                       const newBtns = [...(editingPartner.customButtons || [])];
+                                       newBtns.splice(idx, 1);
+                                       setEditingPartner({...editingPartner, customButtons: newBtns});
+                                    }}
+                                    className="p-2 bg-white/5 hover:bg-red-500/20 text-white/50 hover:text-red-500 transition-colors"
+                                  >
+                                     <Trash2 size={14} />
+                                  </button>
+                               </div>
+                            ))}
+                            <button 
+                              onClick={() => setEditingPartner({...editingPartner, customButtons: [...(editingPartner.customButtons || []), { label: '', url: '' }]})}
+                              className="text-xs font-mono text-authomia-blueLight hover:text-white flex items-center gap-1"
+                            >
+                               <Plus size={12} /> Add Action Button
+                            </button>
+                         </div>
+                      </div>
+
                       <div className="space-y-2">
                          <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Border Color</label>
                          <div className="flex gap-2">

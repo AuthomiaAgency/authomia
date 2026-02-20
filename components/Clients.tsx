@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Content } from '../types';
-import { Server, Lock, ChevronRight, X, ExternalLink, Linkedin, Instagram, Facebook } from 'lucide-react';
+import { Server, Lock, ChevronRight, X, ExternalLink, Linkedin, Instagram, Facebook, Twitter, Youtube, Globe, Link as LinkIcon } from 'lucide-react';
 import Modal from './Modals';
 
 interface ClientsProps {
@@ -16,18 +16,47 @@ interface Partner {
   image: string;
   website: string;
   bio: string;
-  socials: {
-    linkedin?: string;
-    twitter?: string;
-    instagram?: string;
-  };
+  borderColor?: 'white' | 'red' | 'blue' | 'green' | 'gold';
+  socialLinks: string[];
+  customButtons?: { label: string; url: string; color?: string }[];
 }
+
+const TikTokIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+  </svg>
+);
+
+const getSocialIcon = (url: string) => {
+  if (url.includes('facebook.com')) return <Facebook className="w-4 h-4" />;
+  if (url.includes('instagram.com')) return <Instagram className="w-4 h-4" />;
+  if (url.includes('linkedin.com')) return <Linkedin className="w-4 h-4" />;
+  if (url.includes('twitter.com') || url.includes('x.com')) return <Twitter className="w-4 h-4" />;
+  if (url.includes('youtube.com')) return <Youtube className="w-4 h-4" />;
+  if (url.includes('tiktok.com')) return <TikTokIcon />;
+  return <LinkIcon className="w-4 h-4" />;
+};
+
+const getSocialColor = (url: string) => {
+  if (url.includes('facebook.com')) return 'hover:bg-[#1877F2] hover:border-[#1877F2]';
+  if (url.includes('instagram.com')) return 'hover:bg-[#E4405F] hover:border-[#E4405F]';
+  if (url.includes('linkedin.com')) return 'hover:bg-[#0077b5] hover:border-[#0077b5]';
+  if (url.includes('twitter.com') || url.includes('x.com')) return 'hover:bg-black hover:border-white';
+  if (url.includes('youtube.com')) return 'hover:bg-[#FF0000] hover:border-[#FF0000]';
+  if (url.includes('tiktok.com')) return 'hover:bg-black hover:border-[#00f2ea]';
+  return 'hover:bg-white hover:text-black hover:border-white';
+};
 
 const Clients: React.FC<ClientsProps> = ({ content }) => {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [hoveredPartnerId, setHoveredPartnerId] = useState<string | null>(null);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
+  const [showMiniTab, setShowMiniTab] = useState(false);
+
+  useEffect(() => {
+    setShowMiniTab(false);
+  }, [selectedPartner]);
 
   useEffect(() => {
     const saved = localStorage.getItem('authomia_partners');
@@ -81,6 +110,16 @@ const Clients: React.FC<ClientsProps> = ({ content }) => {
             {slots.map((partner, index) => {
               // PARTNER SLOT (FILLED)
               if (partner) {
+                const borderColors = {
+                  white: 'border-white/50 shadow-[0_0_15px_rgba(255,255,255,0.2)]',
+                  red: 'border-[#B30A0A] shadow-[0_0_15px_rgba(179,10,10,0.4)]',
+                  blue: 'border-[#0A109E] shadow-[0_0_15px_rgba(10,16,158,0.4)]',
+                  green: 'border-[#10B981] shadow-[0_0_15px_rgba(16,185,129,0.4)]',
+                  gold: 'border-[#FFD700] shadow-[0_0_15px_rgba(255,215,0,0.4)]',
+                };
+                const activeBorderClass = partner.borderColor ? borderColors[partner.borderColor] : 'border-white/10 group-hover:border-authomia-blue/50';
+                const activeImageBorderClass = partner.borderColor ? borderColors[partner.borderColor] : 'border-white/10 group-hover:border-authomia-blue/50';
+
                 return (
                   <motion.div 
                      key={partner.id}
@@ -90,43 +129,19 @@ const Clients: React.FC<ClientsProps> = ({ content }) => {
                      onMouseEnter={() => setHoveredPartnerId(partner.id)}
                      onMouseLeave={() => setHoveredPartnerId(null)}
                      onClick={() => setSelectedPartner(partner)}
-                     className={`group relative h-[400px] bg-[#08090B] border rounded-sm p-8 overflow-hidden cursor-none flex flex-col justify-between transition-colors duration-500 preserve-3d ${
-                        partner.borderColor === 'red' ? 'border-authomia-red/50 hover:border-authomia-red' :
-                        partner.borderColor === 'blue' ? 'border-authomia-blue/50 hover:border-authomia-blue' :
-                        partner.borderColor === 'green' ? 'border-green-500/50 hover:border-green-500' :
-                        partner.borderColor === 'gold' ? 'border-yellow-500/50 hover:border-yellow-500' :
-                        'border-white/10 hover:border-white/40'
-                     }`}
+                     className={`group relative h-[400px] bg-[#08090B] border rounded-sm p-8 overflow-hidden cursor-none flex flex-col justify-between transition-all duration-500 preserve-3d ${activeBorderClass}`}
                   >
-                     <div className={`absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${
-                        partner.borderColor === 'red' ? 'from-authomia-red/10 to-transparent' :
-                        partner.borderColor === 'blue' ? 'from-authomia-blue/10 to-transparent' :
-                        partner.borderColor === 'green' ? 'from-green-500/10 to-transparent' :
-                        partner.borderColor === 'gold' ? 'from-yellow-500/10 to-transparent' :
-                        'from-white/5 to-transparent'
-                     }`} />
+                     <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                      
                      <div className="relative z-10">
                         {/* Company Title */}
                         <div className="mb-6">
                            <h3 className="text-lg font-bold font-mono text-white mb-1 tracking-wide">{partner.companyName}</h3>
-                           <p className={`text-xs font-mono uppercase tracking-widest ${
-                              partner.borderColor === 'red' ? 'text-authomia-redLight' :
-                              partner.borderColor === 'blue' ? 'text-authomia-blueLight' :
-                              partner.borderColor === 'green' ? 'text-green-400' :
-                              partner.borderColor === 'gold' ? 'text-yellow-400' :
-                              'text-white/50'
-                           }`}>{partner.personName}</p>
+                           <p className="text-xs text-authomia-blueLight font-mono uppercase tracking-widest">{partner.personName}</p>
                         </div>
 
                         {/* Profile Image */}
-                        <div className={`w-20 h-20 rounded-full border-2 overflow-hidden mb-6 shadow-2xl group-hover:scale-105 transition-transform duration-500 ${
-                           partner.borderColor === 'red' ? 'border-authomia-red/30 group-hover:border-authomia-red' :
-                           partner.borderColor === 'blue' ? 'border-authomia-blue/30 group-hover:border-authomia-blue' :
-                           partner.borderColor === 'green' ? 'border-green-500/30 group-hover:border-green-500' :
-                           partner.borderColor === 'gold' ? 'border-yellow-500/30 group-hover:border-yellow-500' :
-                           'border-white/10 group-hover:border-white/50'
-                        }`}>
+                        <div className={`w-20 h-20 rounded-full border-2 overflow-hidden mb-6 shadow-2xl group-hover:scale-105 transition-all duration-500 ${activeImageBorderClass}`}>
                            <img src={partner.image} alt={partner.personName} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
                         </div>
 
@@ -239,34 +254,100 @@ const Clients: React.FC<ClientsProps> = ({ content }) => {
                      <h2 className="text-xl font-bold font-mono text-white mb-1">{selectedPartner.companyName}</h2>
                      <p className="text-sm text-authomia-blueLight font-mono uppercase tracking-widest mb-6">{selectedPartner.personName}</p>
 
-                     <div className="flex justify-center gap-4">
-                        {selectedPartner.socials.linkedin && (
-                          <a href={selectedPartner.socials.linkedin} target="_blank" rel="noopener noreferrer" className="p-2 bg-white/5 rounded-full hover:bg-[#0077b5] hover:text-white transition-colors">
-                            <Linkedin className="w-4 h-4" />
+                     <div className="flex justify-center gap-4 flex-wrap">
+                        {selectedPartner.socialLinks?.map((link, idx) => (
+                          <a 
+                            key={idx} 
+                            href={link} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className={`p-3 bg-white/5 rounded-full border border-white/10 text-white/70 transition-all duration-300 hover:scale-110 hover:text-white hover:shadow-[0_0_15px_rgba(255,255,255,0.2)] ${getSocialColor(link)}`}
+                          >
+                            {getSocialIcon(link)}
                           </a>
-                        )}
-                        {selectedPartner.socials.instagram && (
-                          <a href={selectedPartner.socials.instagram} target="_blank" rel="noopener noreferrer" className="p-2 bg-white/5 rounded-full hover:bg-[#E4405F] hover:text-white transition-colors">
-                            <Instagram className="w-4 h-4" />
-                          </a>
-                        )}
-                        {selectedPartner.socials.twitter && ( // Using facebook icon for generic field map
-                          <a href={selectedPartner.socials.twitter} target="_blank" rel="noopener noreferrer" className="p-2 bg-white/5 rounded-full hover:bg-[#1877F2] hover:text-white transition-colors">
-                            <Facebook className="w-4 h-4" />
-                          </a>
-                        )}
+                        ))}
                      </div>
                    </div>
                 </div>
 
                 {/* Right: Report */}
                 <div className="w-full md:w-2/3 p-8 md:p-12 relative">
-                   <div className="flex items-center gap-3 mb-8 opacity-50">
-                      <ExternalLink className="w-4 h-4" />
-                      <a href={selectedPartner.website} target="_blank" rel="noreferrer" className="text-xs font-mono uppercase tracking-widest hover:text-white hover:underline">
-                        {selectedPartner.website}
-                      </a>
-                   </div>
+                   {(() => {
+                      const allButtons = [];
+                      if (selectedPartner.website) {
+                        allButtons.push({ label: 'VISIT WEBSITE', url: selectedPartner.website, isWebsite: true });
+                      }
+                      if (selectedPartner.customButtons) {
+                        allButtons.push(...selectedPartner.customButtons.map(b => ({ ...b, isWebsite: false })));
+                      }
+                      const isOverflowing = allButtons.length > 3;
+
+                      if (allButtons.length === 0) return null;
+
+                      return (
+                        <div className="flex flex-wrap gap-3 mb-8 relative z-50">
+                          {isOverflowing ? (
+                            <div className="relative">
+                               <button 
+                                 onClick={() => setShowMiniTab(!showMiniTab)}
+                                 className={`px-6 py-3 border text-xs font-mono uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2 ${
+                                    selectedPartner.borderColor === 'red' ? 'border-[#B30A0A] text-[#B30A0A] shadow-[0_0_10px_rgba(179,10,10,0.2)]' :
+                                    selectedPartner.borderColor === 'blue' ? 'border-[#0A109E] text-[#0A109E] shadow-[0_0_10px_rgba(10,16,158,0.2)]' :
+                                    selectedPartner.borderColor === 'green' ? 'border-[#10B981] text-[#10B981] shadow-[0_0_10px_rgba(16,185,129,0.2)]' :
+                                    selectedPartner.borderColor === 'gold' ? 'border-[#FFD700] text-[#FFD700] shadow-[0_0_10px_rgba(255,215,0,0.2)]' :
+                                    'border-white/50 text-white shadow-[0_0_10px_rgba(255,255,255,0.1)]'
+                                  }`}
+                               >
+                                  Más sobre el Socio <ChevronRight className={`w-3 h-3 transition-transform ${showMiniTab ? 'rotate-90' : ''}`} />
+                               </button>
+                               
+                               <AnimatePresence>
+                                 {showMiniTab && (
+                                    <motion.div 
+                                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                      className="absolute top-full left-0 mt-2 w-64 bg-[#0A0A0A] border border-white/10 p-2 rounded-sm shadow-2xl z-50 flex flex-col gap-1"
+                                    >
+                                       {allButtons.map((btn, idx) => (
+                                          <a 
+                                            key={idx}
+                                            href={btn.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="block w-full px-4 py-3 text-xs font-mono text-white/70 hover:text-white hover:bg-white/5 rounded-sm transition-colors border-l-2 border-transparent hover:border-authomia-blueLight truncate flex items-center gap-2"
+                                          >
+                                             {btn.isWebsite && <ExternalLink className="w-3 h-3" />}
+                                             {btn.label}
+                                          </a>
+                                       ))}
+                                    </motion.div>
+                                 )}
+                               </AnimatePresence>
+                            </div>
+                          ) : (
+                            allButtons.map((btn, idx) => (
+                               <a 
+                                 key={idx}
+                                 href={btn.url}
+                                 target="_blank"
+                                 rel="noreferrer"
+                                 className={`px-4 py-2 border text-xs font-mono uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2 ${
+                                    selectedPartner.borderColor === 'red' ? 'border-[#B30A0A] text-[#B30A0A] shadow-[0_0_10px_rgba(179,10,10,0.2)]' :
+                                    selectedPartner.borderColor === 'blue' ? 'border-[#0A109E] text-[#0A109E] shadow-[0_0_10px_rgba(10,16,158,0.2)]' :
+                                    selectedPartner.borderColor === 'green' ? 'border-[#10B981] text-[#10B981] shadow-[0_0_10px_rgba(16,185,129,0.2)]' :
+                                    selectedPartner.borderColor === 'gold' ? 'border-[#FFD700] text-[#FFD700] shadow-[0_0_10px_rgba(255,215,0,0.2)]' :
+                                    'border-white/50 text-white shadow-[0_0_10px_rgba(255,255,255,0.1)]'
+                                  }`}
+                               >
+                                 {btn.isWebsite && <ExternalLink className="w-3 h-3" />}
+                                 {btn.label}
+                               </a>
+                            ))
+                          )}
+                        </div>
+                      );
+                   })()}
 
                    <div className="prose prose-invert max-w-none">
                       <h3 className="text-lg font-light text-white mb-4 border-b border-white/10 pb-4">Informe de Socio Legado</h3>
