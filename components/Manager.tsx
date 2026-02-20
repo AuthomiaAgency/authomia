@@ -98,6 +98,17 @@ const Manager: React.FC = () => {
     localStorage.setItem('authomia_surveys', JSON.stringify(data));
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        callback(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (email === 'authomia.agency@gmail.com' && password === 'M@xCB_2026') {
@@ -185,7 +196,21 @@ const Manager: React.FC = () => {
                       <input className="w-full bg-white/5 border border-white/10 p-2 text-white" placeholder="Company Name" value={editingPartner.companyName} onChange={e => setEditingPartner({...editingPartner, companyName: e.target.value})} />
                       <input className="w-full bg-white/5 border border-white/10 p-2 text-white" placeholder="Person Name" value={editingPartner.personName} onChange={e => setEditingPartner({...editingPartner, personName: e.target.value})} />
                       <textarea className="w-full bg-white/5 border border-white/10 p-2 text-white h-20" placeholder="Short Quote" value={editingPartner.quote} onChange={e => setEditingPartner({...editingPartner, quote: e.target.value})} />
-                      <input className="w-full bg-white/5 border border-white/10 p-2 text-white" placeholder="Image URL" value={editingPartner.image} onChange={e => setEditingPartner({...editingPartner, image: e.target.value})} />
+                      
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Image</label>
+                         <div className="flex gap-2 items-center">
+                            <input className="flex-1 bg-white/5 border border-white/10 p-2 text-white text-xs" placeholder="Image URL or Upload" value={editingPartner.image} onChange={e => setEditingPartner({...editingPartner, image: e.target.value})} />
+                            <label className="cursor-pointer bg-white/10 hover:bg-white/20 p-2 border border-white/10 flex items-center justify-center transition-colors">
+                               <ImageIcon size={16} className="text-white/70" />
+                               <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (base64) => setEditingPartner({...editingPartner, image: base64}))} />
+                            </label>
+                         </div>
+                         {editingPartner.image && (
+                            <img src={editingPartner.image} alt="Preview" className="w-16 h-16 object-cover border border-white/10 rounded-sm mt-2" />
+                         )}
+                      </div>
+
                       <textarea className="w-full bg-white/5 border border-white/10 p-2 text-white h-32" placeholder="Full Bio / Story" value={editingPartner.bio} onChange={e => setEditingPartner({...editingPartner, bio: e.target.value})} />
                       <input className="w-full bg-white/5 border border-white/10 p-2 text-white" placeholder="Website" value={editingPartner.website} onChange={e => setEditingPartner({...editingPartner, website: e.target.value})} />
                       
@@ -237,7 +262,21 @@ const Manager: React.FC = () => {
                       <div className="flex justify-between"><h2 className="text-authomia-blueLight font-mono">Editing Post</h2><span className="text-xs text-white/30">{editingPub.id}</span></div>
                       <input className="w-full bg-white/5 border border-white/10 p-2 text-white font-bold text-lg" placeholder="Title" value={editingPub.title} onChange={e => setEditingPub({...editingPub, title: e.target.value})} />
                       <input className="w-full bg-white/5 border border-white/10 p-2 text-white" type="date" value={editingPub.date} onChange={e => setEditingPub({...editingPub, date: e.target.value})} />
-                      <input className="w-full bg-white/5 border border-white/10 p-2 text-white" placeholder="Cover Image URL" value={editingPub.coverImage} onChange={e => setEditingPub({...editingPub, coverImage: e.target.value})} />
+                      
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Cover Image</label>
+                         <div className="flex gap-2 items-center">
+                            <input className="flex-1 bg-white/5 border border-white/10 p-2 text-white text-xs" placeholder="Cover Image URL or Upload" value={editingPub.coverImage} onChange={e => setEditingPub({...editingPub, coverImage: e.target.value})} />
+                            <label className="cursor-pointer bg-white/10 hover:bg-white/20 p-2 border border-white/10 flex items-center justify-center transition-colors">
+                               <ImageIcon size={16} className="text-white/70" />
+                               <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (base64) => setEditingPub({...editingPub, coverImage: base64}))} />
+                            </label>
+                         </div>
+                         {editingPub.coverImage && (
+                            <img src={editingPub.coverImage} alt="Preview" className="w-full h-32 object-cover border border-white/10 rounded-sm mt-2" />
+                         )}
+                      </div>
+
                       <textarea className="w-full bg-white/5 border border-white/10 p-2 text-white h-20" placeholder="Short Excerpt" value={editingPub.excerpt} onChange={e => setEditingPub({...editingPub, excerpt: e.target.value})} />
                       
                       <div className="border-t border-white/10 pt-4">
@@ -248,7 +287,15 @@ const Manager: React.FC = () => {
                                   <button onClick={() => { const newBlocks = [...editingPub.blocks]; newBlocks.splice(idx, 1); setEditingPub({...editingPub, blocks: newBlocks}); }} className="absolute top-2 right-2 text-white/20 hover:text-red-500"><XIcon /></button>
                                   <div className="text-[10px] uppercase text-white/30 mb-2">{block.type}</div>
                                   {block.type === 'text' && <textarea className="w-full bg-transparent border-none outline-none text-white h-24 resize-none" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Type text content..." />}
-                                  {block.type === 'image' && <input className="w-full bg-transparent border-b border-white/10 outline-none text-white" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Image URL..." />}
+                                  {block.type === 'image' && (
+                                     <div className="flex gap-2 items-center">
+                                        <input className="flex-1 bg-transparent border-b border-white/10 outline-none text-white text-xs pb-1" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Image URL or Upload..." />
+                                        <label className="cursor-pointer bg-white/5 hover:bg-white/10 p-1 border border-white/10 flex items-center justify-center transition-colors rounded-sm">
+                                           <ImageIcon size={14} className="text-white/50" />
+                                           <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (base64) => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = base64; setEditingPub({...editingPub, blocks: newBlocks}); })} />
+                                        </label>
+                                     </div>
+                                  )}
                                   {block.type === 'button' && (
                                      <div className="grid grid-cols-1 gap-2">
                                         <div className="grid grid-cols-2 gap-2">

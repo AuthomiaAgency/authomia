@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Content } from '../types';
-import { Quote, Radio, MessageSquarePlus } from 'lucide-react';
+import { Quote, Radio, MessageSquarePlus, Star } from 'lucide-react';
 
 interface TestimonialsProps {
   content: Content['testimonials'];
@@ -30,23 +30,20 @@ const Testimonials: React.FC<TestimonialsProps> = ({ content }) => {
            <div className="absolute top-0 left-0 w-full h-[1px] bg-white/10 animate-[scan_4s_linear_infinite]" />
 
            <div className="relative z-10 flex flex-col items-center gap-6">
-              {/* Icon moved lower with mt-6 */}
-              <div className="mt-6 w-16 h-16 rounded-full bg-white/5 flex items-center justify-center animate-pulse border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.05)]">
-                 <Radio className="w-6 h-6 text-white/30" />
+              {/* Trustindex Widget Space */}
+              <div className="w-full max-w-4xl mx-auto mb-8 relative z-20 min-h-[200px] flex items-center justify-center">
+                 <div className="w-full" src='https://cdn.trustindex.io/loader.js?c1944fc653ab348af1969151da0'></div>
               </div>
-              
-              <h3 className="text-xl font-mono text-white tracking-tight">{content.voidTitle}</h3>
-              <p className="text-sm text-white/40 max-w-lg leading-relaxed font-light mb-8">
-                 {content.voidDesc}
-              </p>
 
-              {/* Trustindex Widget */}
-              <div className="w-full max-w-3xl mx-auto mb-8 relative z-20" src='https://cdn.trustindex.io/loader.js?c1944fc653ab348af1969151da0'></div>
-
-              <button className="mt-4 px-6 py-3 border border-white/20 text-white/60 font-mono text-xs uppercase tracking-widest hover:bg-white hover:text-black hover:border-white transition-all duration-300 flex items-center gap-3">
-                 <MessageSquarePlus className="w-3 h-3" />
-                 {content.cta}
-              </button>
+              <a 
+                href="https://www.trustindex.io/reviews/authomia.cloud" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="mt-4 px-8 py-3 bg-[#00b67a] text-white font-sans font-medium text-sm rounded-md hover:bg-[#00a06b] transition-all duration-300 flex items-center gap-3 shadow-[0_0_20px_rgba(0,182,122,0.2)] hover:shadow-[0_0_30px_rgba(0,182,122,0.4)] hover:-translate-y-1"
+              >
+                 <Star className="w-4 h-4 fill-white" />
+                 Escribir una reseña en Trustindex
+              </a>
            </div>
         </motion.div>
       </div>
