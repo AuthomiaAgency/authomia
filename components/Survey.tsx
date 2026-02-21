@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Check, AlertCircle } from 'lucide-react';
+import { ArrowRight, Check, AlertCircle, ExternalLink } from 'lucide-react';
 
 interface SurveyQuestion {
   id: string;
-  type: 'text' | 'choice' | 'email';
+  type: 'text' | 'choice' | 'email' | 'info' | 'button';
   question: string;
   options?: string[];
+  url?: string;
 }
 
 interface SurveyData {
   id: string;
   title: string;
   description: string;
+  introTitle?: string;
+  introDescription?: string;
+  introButtonLabel?: string;
   questions: SurveyQuestion[];
   responses: any[];
   ctaLabel?: string;
@@ -25,6 +29,7 @@ const Survey: React.FC = () => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [completed, setCompleted] = useState(false);
   const [error, setError] = useState('');
+  const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -33,7 +38,10 @@ const Survey: React.FC = () => {
     
     if (id && savedSurveys) {
       const found = JSON.parse(savedSurveys).find((s: any) => s.id === id);
-      if (found) setSurvey(found);
+      if (found) {
+         setSurvey(found);
+         if (!found.introTitle) setShowIntro(false);
+      }
     }
   }, []);
 
@@ -46,13 +54,19 @@ const Survey: React.FC = () => {
   const nextStep = () => {
     if (!survey) return;
     const q = survey.questions[currentStep];
-    if (!answers[q.id]) {
-       setError('Por favor, completa este campo.');
-       return;
+    
+    if (q.type === 'text' || q.type === 'choice') {
+       if (!answers[q.id]) {
+          setError('Por favor, completa este campo.');
+          return;
+       }
     }
-    if (q.type === 'email' && !answers[q.id].includes('@')) {
-       setError('Formato de email inválido.');
-       return;
+    
+    if (q.type === 'email') {
+       if (!answers[q.id] || !answers[q.id].includes('@')) {
+          setError('Formato de email inválido.');
+          return;
+       }
     }
     
     if (currentStep < survey.questions.length - 1) {
@@ -78,30 +92,56 @@ const Survey: React.FC = () => {
     setCompleted(true);
   };
 
-  if (!survey) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono">Cargando Protocolo...</div>;
+  if (!survey) return <div className="min-h-screen bg-[#020202] flex items-center justify-center text-white font-mono">Cargando Protocolo...</div>;
+
+  if (showIntro) {
+     return (
+        <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center px-6 text-center relative overflow-hidden">
+           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(10,16,158,0.1)_0%,transparent_50%)] pointer-events-none" />
+           <motion.div 
+             initial={{ opacity: 0, y: 20 }} 
+             animate={{ opacity: 1, y: 0 }} 
+             className="max-w-2xl relative z-10"
+           >
+              <h1 className="text-4xl md:text-6xl text-white font-light mb-6 tracking-tight">{survey.introTitle}</h1>
+              <p className="text-white/60 text-lg font-light mb-12 leading-relaxed">{survey.introDescription}</p>
+              <button 
+                onClick={() => setShowIntro(false)} 
+                className="px-10 py-4 bg-white text-black font-mono text-sm uppercase tracking-widest hover:bg-authomia-blue hover:text-white transition-all flex items-center gap-3 mx-auto rounded-sm shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(10,16,158,0.4)]"
+              >
+                 {survey.introButtonLabel || 'INICIAR'} <ArrowRight size={16} />
+              </button>
+           </motion.div>
+        </div>
+     );
+  }
 
   if (completed) {
      return (
-        <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center px-6 text-center">
-           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-20 h-20 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mb-8 border border-green-500/50">
+        <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center px-6 text-center relative overflow-hidden">
+           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.1)_0%,transparent_50%)] pointer-events-none" />
+           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-24 h-24 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center mb-8 border border-green-500/30 shadow-[0_0_50px_rgba(16,185,129,0.2)] relative z-10">
               <Check size={40} />
            </motion.div>
-           <h1 className="text-3xl md:text-4xl text-white font-light mb-4">Registro Completado</h1>
-           <p className="text-white/40 mb-12 max-w-md">Tus datos han sido encriptados y enviados a la base central de Authomia.</p>
+           <h1 className="text-3xl md:text-5xl text-white font-light mb-6 relative z-10">Protocolo Completado</h1>
+           <p className="text-white/50 mb-12 max-w-md text-lg font-light relative z-10">Tus datos han sido encriptados y enviados a la base central de Authomia.</p>
            
-           {survey.ctaLink && (
-              <a href={survey.ctaLink} className="px-8 py-4 bg-authomia-blue hover:bg-authomia-blueLight text-white font-mono text-sm tracking-widest rounded-full transition-colors">
-                 {survey.ctaLabel || 'CONTINUAR'}
-              </a>
-           )}
-           {!survey.ctaLink && (
-              <a href="/" className="text-white/30 font-mono text-xs hover:text-white mt-8">VOLVER AL INICIO</a>
-           )}
+           <div className="relative z-10 flex flex-col items-center gap-6">
+              {survey.ctaLink && (
+                 <a href={survey.ctaLink} className="px-10 py-4 bg-authomia-blue hover:bg-authomia-blueLight text-white font-mono text-sm tracking-widest rounded-sm transition-all shadow-[0_0_30px_rgba(10,16,158,0.3)]">
+                    {survey.ctaLabel || 'CONTINUAR'}
+                 </a>
+              )}
+              <p className="text-xs font-mono text-white/30 uppercase tracking-widest mt-4">
+                 Ya puedes cerrar esta página
+              </p>
+           </div>
         </div>
      );
   }
 
   const q = survey.questions[currentStep];
+  const isInformationBlock = q.type === 'info' || q.type === 'button';
 
   return (
     <div className="min-h-screen bg-[#050505] flex flex-col">
@@ -113,7 +153,7 @@ const Survey: React.FC = () => {
           />
        </div>
 
-       <div className="flex-1 flex flex-col items-center justify-center px-6 md:px-20 max-w-4xl mx-auto w-full">
+       <div className="flex-1 flex flex-col items-center justify-center px-6 md:px-20 max-w-4xl mx-auto w-full py-12">
           <AnimatePresence mode="wait">
              <motion.div 
                key={currentStep}
@@ -122,8 +162,29 @@ const Survey: React.FC = () => {
                exit={{ opacity: 0, x: -20 }}
                className="w-full"
              >
-                <span className="text-authomia-blue font-mono text-xs mb-4 block">PREGUNTA {currentStep + 1} DE {survey.questions.length}</span>
-                <h2 className="text-2xl md:text-4xl text-white font-light mb-8 md:mb-12 leading-tight">{q.question}</h2>
+                {!isInformationBlock && (
+                   <span className="text-authomia-blue font-mono text-xs mb-6 block tracking-widest uppercase">PREGUNTA {currentStep + 1} DE {survey.questions.length}</span>
+                )}
+                
+                {q.type === 'info' ? (
+                   <div className="prose prose-invert max-w-none mb-12">
+                      <h2 className="text-3xl md:text-5xl text-white font-light leading-tight whitespace-pre-line">{q.question}</h2>
+                   </div>
+                ) : q.type === 'button' ? (
+                   <div className="flex flex-col items-center text-center mb-12">
+                      <h2 className="text-3xl md:text-5xl text-white font-light mb-12 leading-tight">{q.question}</h2>
+                      <a 
+                        href={q.url || '#'} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="px-10 py-5 bg-white/5 border border-white/20 hover:bg-white hover:text-black hover:border-white text-white font-mono text-sm uppercase tracking-widest transition-all flex items-center gap-3 rounded-sm"
+                      >
+                         {q.options?.[0] || 'ABRIR ENLACE'} <ExternalLink size={16} />
+                      </a>
+                   </div>
+                ) : (
+                   <h2 className="text-2xl md:text-4xl text-white font-light mb-8 md:mb-12 leading-tight">{q.question}</h2>
+                )}
 
                 {q.type === 'text' && (
                    <input 
@@ -154,7 +215,7 @@ const Survey: React.FC = () => {
                          <button 
                            key={idx}
                            onClick={() => { handleAnswer(opt); }}
-                           className={`w-full text-left p-6 border ${answers[q.id] === opt ? 'border-authomia-blue bg-authomia-blue/10 text-white' : 'border-white/10 bg-white/[0.02] text-white/60 hover:bg-white/5 hover:border-white/30'} transition-all text-lg rounded-sm flex items-center gap-4`}
+                           className={`w-full text-left p-6 border ${answers[q.id] === opt ? 'border-authomia-blue bg-authomia-blue/10 text-white shadow-[0_0_20px_rgba(10,16,158,0.2)]' : 'border-white/10 bg-white/[0.02] text-white/60 hover:bg-white/5 hover:border-white/30'} transition-all text-lg rounded-sm flex items-center gap-4`}
                          >
                             <span className="w-6 h-6 border border-white/20 flex items-center justify-center text-xs font-mono">{String.fromCharCode(65 + idx)}</span>
                             {opt}
@@ -163,10 +224,13 @@ const Survey: React.FC = () => {
                    </div>
                 )}
 
-                {error && <div className="mt-4 flex items-center gap-2 text-red-400 text-sm"><AlertCircle size={14}/> {error}</div>}
+                {error && <div className="mt-6 flex items-center gap-2 text-red-400 text-sm font-mono"><AlertCircle size={14}/> {error}</div>}
 
-                <div className="mt-12">
-                   <button onClick={nextStep} className="px-8 py-3 bg-white text-black font-mono text-sm font-bold uppercase tracking-widest hover:bg-authomia-blue hover:text-white transition-colors rounded-sm flex items-center gap-2">
+                <div className="mt-16 flex justify-between items-center border-t border-white/10 pt-8">
+                   <div className="text-white/30 font-mono text-xs">
+                      {isInformationBlock ? 'INFORMACIÓN' : 'REQUERIDO'}
+                   </div>
+                   <button onClick={nextStep} className="px-8 py-4 bg-white text-black font-mono text-sm font-bold uppercase tracking-widest hover:bg-authomia-blue hover:text-white transition-all rounded-sm flex items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(10,16,158,0.4)]">
                       {currentStep === survey.questions.length - 1 ? 'FINALIZAR' : 'SIGUIENTE'} <ArrowRight size={16} />
                    </button>
                 </div>

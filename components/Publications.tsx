@@ -4,9 +4,11 @@ import { ArrowLeft, Calendar, ArrowRight, Lock, ImageOff } from 'lucide-react';
 import { LOGO_ICON_URL } from '../constants';
 
 interface PublicationBlock {
-  type: 'text' | 'image' | 'button';
+  type: 'text' | 'image' | 'button' | 'heading' | 'quote' | 'divider' | 'video';
   content: string;
   extra?: string;
+  buttonColor?: string;
+  icon?: string;
 }
 
 interface Publication {
@@ -76,14 +78,32 @@ const Publications: React.FC = () => {
               <div className="space-y-12 max-w-2xl mx-auto">
                  {selectedPub.blocks.map((block, idx) => (
                     <div key={idx}>
+                       {block.type === 'heading' && <h2 className="text-2xl md:text-3xl font-light text-white mb-6 mt-12">{block.content}</h2>}
                        {block.type === 'text' && <p className="text-lg text-white/80 font-light leading-relaxed whitespace-pre-line">{block.content}</p>}
+                       {block.type === 'quote' && (
+                          <blockquote className="border-l-2 border-authomia-blueLight pl-6 py-2 my-8">
+                             <p className="text-xl md:text-2xl font-light italic text-white/90 leading-relaxed">"{block.content}"</p>
+                             {block.extra && <footer className="text-sm font-mono text-white/50 mt-4 uppercase tracking-widest">— {block.extra}</footer>}
+                          </blockquote>
+                       )}
+                       {block.type === 'divider' && <hr className="border-white/10 my-16" />}
                        {block.type === 'image' && (
-                          <div className="rounded-sm border border-white/10 overflow-hidden bg-[#08090B]">
+                          <div className="rounded-sm border border-white/10 overflow-hidden bg-[#08090B] my-8">
                              <img 
                                src={block.content} 
                                className="w-full" 
                                alt="Content" 
                                onError={handleImageError}
+                             />
+                          </div>
+                       )}
+                       {block.type === 'video' && (
+                          <div className="rounded-sm border border-white/10 overflow-hidden bg-[#08090B] my-8 aspect-video relative">
+                             <iframe 
+                               src={block.content} 
+                               className="absolute top-0 left-0 w-full h-full"
+                               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                               allowFullScreen
                              />
                           </div>
                        )}

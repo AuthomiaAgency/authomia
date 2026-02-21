@@ -33,9 +33,10 @@ export interface Publication {
 
 export interface SurveyQuestion {
   id: string;
-  type: 'text' | 'choice' | 'email';
+  type: 'text' | 'choice' | 'email' | 'info' | 'button';
   question: string;
   options?: string[];
+  url?: string;
 }
 
 export interface SurveyResponse {
@@ -47,61 +48,9 @@ export interface Survey {
   id: string;
   title: string;
   description: string;
-  questions: SurveyQuestion[];
-  responses: SurveyResponse[];
-  ctaLabel?: string;
-  ctaLink?: string;
-}
-
-export interface Partner {
-  id: string;
-  companyName: string;
-  personName: string;
-  quote: string;
-  image: string;
-  website: string;
-  bio: string;
-  borderColor?: string; // Changed to string to allow hex or preset names
-  socials: {
-    linkedin?: string;
-    twitter?: string;
-    instagram?: string;
-  };
-}
-
-export interface PublicationBlock {
-  type: 'text' | 'image' | 'button';
-  content: string;
-  extra?: string;
-  buttonColor?: string;
-  icon?: string;
-}
-
-export interface Publication {
-  id: string;
-  title: string;
-  date: string;
-  coverImage: string;
-  excerpt: string;
-  blocks: PublicationBlock[];
-}
-
-export interface SurveyQuestion {
-  id: string;
-  type: 'text' | 'choice' | 'email';
-  question: string;
-  options?: string[];
-}
-
-export interface SurveyResponse {
-  date: string;
-  answers: Record<string, string>;
-}
-
-export interface Survey {
-  id: string;
-  title: string;
-  description: string;
+  introTitle?: string;
+  introDescription?: string;
+  introButtonLabel?: string;
   questions: SurveyQuestion[];
   responses: SurveyResponse[];
   ctaLabel?: string;

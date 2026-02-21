@@ -371,6 +371,15 @@ const Manager: React.FC = () => {
                                   <button onClick={() => { const newBlocks = [...editingPub.blocks]; newBlocks.splice(idx, 1); setEditingPub({...editingPub, blocks: newBlocks}); }} className="absolute top-2 right-2 text-white/20 hover:text-red-500"><XIcon /></button>
                                   <div className="text-[10px] uppercase text-white/30 mb-2">{block.type}</div>
                                   {block.type === 'text' && <textarea className="w-full bg-transparent border-none outline-none text-white h-24 resize-none" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Type text content..." />}
+                                  {block.type === 'heading' && <input className="w-full bg-transparent border-b border-white/10 outline-none text-white text-lg pb-1" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Type heading..." />}
+                                  {block.type === 'quote' && (
+                                     <div className="space-y-2">
+                                        <textarea className="w-full bg-transparent border-none outline-none text-white h-20 resize-none italic" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Type quote..." />
+                                        <input className="w-full bg-transparent border-b border-white/10 outline-none text-white/50 text-xs pb-1" value={block.extra || ''} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].extra = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Author / Source (Optional)" />
+                                     </div>
+                                  )}
+                                  {block.type === 'video' && <input className="w-full bg-transparent border-b border-white/10 outline-none text-white text-xs pb-1" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="YouTube/Vimeo Embed URL..." />}
+                                  {block.type === 'divider' && <div className="w-full h-px bg-white/20 my-2" />}
                                   {block.type === 'image' && (
                                      <div className="flex gap-2 items-center">
                                         <input className="flex-1 bg-transparent border-b border-white/10 outline-none text-white text-xs pb-1" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Image URL or Upload..." />
@@ -395,10 +404,14 @@ const Manager: React.FC = () => {
                                </div>
                             ))}
                          </div>
-                         <div className="flex gap-2">
+                         <div className="flex flex-wrap gap-2">
+                            <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'heading', content: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2">Heading</button>
                             <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'text', content: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2"><FileText size={12}/> Text</button>
+                            <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'quote', content: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2">Quote</button>
                             <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'image', content: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2"><ImageIcon size={12}/> Image</button>
+                            <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'video', content: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2">Video</button>
                             <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'button', content: '', extra: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2"><Link size={12}/> Button</button>
+                            <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'divider', content: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2">Divider</button>
                          </div>
                       </div>
 
@@ -447,6 +460,14 @@ const Manager: React.FC = () => {
                       <div className="space-y-4">
                          <input className="w-full bg-white/5 border border-white/10 p-2 text-white font-bold text-lg" placeholder="Survey Title" value={editingSurvey.title} onChange={e => setEditingSurvey({...editingSurvey, title: e.target.value})} />
                          <textarea className="w-full bg-white/5 border border-white/10 p-2 text-white h-20" placeholder="Description" value={editingSurvey.description} onChange={e => setEditingSurvey({...editingSurvey, description: e.target.value})} />
+                         
+                         <div className="border border-white/10 p-4 bg-white/[0.02] space-y-4">
+                            <h4 className="text-xs font-mono text-white/50 uppercase tracking-widest">Intro Screen (Optional)</h4>
+                            <input className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm outline-none" placeholder="Intro Title" value={editingSurvey.introTitle || ''} onChange={e => setEditingSurvey({...editingSurvey, introTitle: e.target.value})} />
+                            <textarea className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm outline-none h-16" placeholder="Intro Description" value={editingSurvey.introDescription || ''} onChange={e => setEditingSurvey({...editingSurvey, introDescription: e.target.value})} />
+                            <input className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm outline-none" placeholder="Intro Button Label (e.g. INICIAR)" value={editingSurvey.introButtonLabel || ''} onChange={e => setEditingSurvey({...editingSurvey, introButtonLabel: e.target.value})} />
+                         </div>
+
                          <div className="grid grid-cols-2 gap-4">
                             <input className="bg-white/5 border border-white/10 p-2 text-white text-sm" placeholder="Final Button Label (Optional)" value={editingSurvey.ctaLabel || ''} onChange={e => setEditingSurvey({...editingSurvey, ctaLabel: e.target.value})} />
                             <input className="bg-white/5 border border-white/10 p-2 text-white text-sm" placeholder="Final Redirect URL (Optional)" value={editingSurvey.ctaLink || ''} onChange={e => setEditingSurvey({...editingSurvey, ctaLink: e.target.value})} />
@@ -455,7 +476,7 @@ const Manager: React.FC = () => {
 
                       {/* Questions Builder */}
                       <div className="border-t border-white/10 pt-4">
-                         <h3 className="text-xs font-mono text-white/50 mb-4">QUESTIONS</h3>
+                         <h3 className="text-xs font-mono text-white/50 mb-4">QUESTIONS & BLOCKS</h3>
                          <div className="space-y-6 mb-6">
                             {editingSurvey.questions.map((q, idx) => (
                                <div key={idx} className="p-4 border border-white/10 bg-white/[0.02] relative group">
@@ -465,16 +486,26 @@ const Manager: React.FC = () => {
                                         <option value="text">Text Input</option>
                                         <option value="email">Email Input</option>
                                         <option value="choice">Multiple Choice</option>
+                                        <option value="info">Info Text Block</option>
+                                        <option value="button">Action Button Block</option>
                                      </select>
                                   </div>
-                                  <input className="w-full bg-transparent border-b border-white/10 outline-none text-white mb-2" value={q.question} onChange={e => { const newQ = [...editingSurvey.questions]; newQ[idx].question = e.target.value; setEditingSurvey({...editingSurvey, questions: newQ}); }} placeholder="Question text..." />
+                                  <input className="w-full bg-transparent border-b border-white/10 outline-none text-white mb-2" value={q.question} onChange={e => { const newQ = [...editingSurvey.questions]; newQ[idx].question = e.target.value; setEditingSurvey({...editingSurvey, questions: newQ}); }} placeholder={q.type === 'info' ? 'Information text...' : q.type === 'button' ? 'Heading above button...' : 'Question text...'} />
+                                  
                                   {q.type === 'choice' && (
                                      <input className="w-full bg-white/5 p-2 text-xs text-white/70" value={q.options?.join(',') || ''} onChange={e => { const newQ = [...editingSurvey.questions]; newQ[idx].options = e.target.value.split(','); setEditingSurvey({...editingSurvey, questions: newQ}); }} placeholder="Option 1, Option 2, Option 3 (comma separated)" />
+                                  )}
+
+                                  {q.type === 'button' && (
+                                     <div className="space-y-2 mt-2">
+                                        <input className="w-full bg-white/5 p-2 text-xs text-white/70" value={q.options?.[0] || ''} onChange={e => { const newQ = [...editingSurvey.questions]; newQ[idx].options = [e.target.value]; setEditingSurvey({...editingSurvey, questions: newQ}); }} placeholder="Button Label" />
+                                        <input className="w-full bg-white/5 p-2 text-xs text-white/70" value={q.url || ''} onChange={e => { const newQ = [...editingSurvey.questions]; newQ[idx].url = e.target.value; setEditingSurvey({...editingSurvey, questions: newQ}); }} placeholder="Target URL" />
+                                     </div>
                                   )}
                                </div>
                             ))}
                          </div>
-                         <button onClick={() => setEditingSurvey({...editingSurvey, questions: [...editingSurvey.questions, { id: Date.now().toString(), type: 'text', question: '' }]})} className="px-4 py-2 bg-white/10 text-xs font-mono uppercase hover:bg-white/20">+ Add Question</button>
+                         <button onClick={() => setEditingSurvey({...editingSurvey, questions: [...editingSurvey.questions, { id: Date.now().toString(), type: 'text', question: '' }]})} className="px-4 py-2 bg-white/10 text-xs font-mono uppercase hover:bg-white/20">+ Add Block</button>
                       </div>
 
                       <button onClick={() => { 

@@ -74,8 +74,20 @@ const Clients: React.FC<ClientsProps> = ({ content }) => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const totalSlots = 4;
+  const totalSlots = 6;
   const slots = Array.from({ length: totalSlots }).map((_, i) => partners[i] || null);
+
+  const carouselRef = React.useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (carouselRef.current) {
+      const scrollAmount = window.innerWidth > 768 ? 424 : 344; // card width + gap
+      carouselRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   return (
     <section className="py-32 px-6 bg-[#050505] border-t border-white/5 relative overflow-hidden" id="clients">
@@ -99,13 +111,32 @@ const Clients: React.FC<ClientsProps> = ({ content }) => {
       </motion.div>
 
       <div className="max-w-7xl mx-auto relative z-10">
-         <div className="text-center mb-16">
-            <h2 className="text-3xl font-light text-white mb-4">{content.title}</h2>
-            <p className="text-white/40 max-w-2xl mx-auto font-light">{content.subtitle}</p>
+         <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+            <div className="text-left">
+               <h2 className="text-3xl font-light text-white mb-4">{content.title}</h2>
+               <p className="text-white/40 max-w-2xl font-light">{content.subtitle}</p>
+            </div>
+            <div className="flex gap-4">
+               <button 
+                 onClick={() => scroll('left')} 
+                 className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all"
+               >
+                 <ChevronRight className="w-5 h-5 rotate-180" />
+               </button>
+               <button 
+                 onClick={() => scroll('right')} 
+                 className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all"
+               >
+                 <ChevronRight className="w-5 h-5" />
+               </button>
+            </div>
          </div>
 
-         {/* The Vault Grid */}
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+         {/* The Vault Carousel */}
+         <div 
+           ref={carouselRef}
+           className="flex overflow-x-auto gap-6 pb-12 snap-x snap-mandatory hide-scrollbar cursor-grab active:cursor-grabbing"
+         >
             
             {slots.map((partner, index) => {
               // PARTNER SLOT (FILLED)
@@ -117,8 +148,16 @@ const Clients: React.FC<ClientsProps> = ({ content }) => {
                   green: 'border-[#10B981] shadow-[0_0_15px_rgba(16,185,129,0.4)]',
                   gold: 'border-[#FFD700] shadow-[0_0_15px_rgba(255,215,0,0.4)]',
                 };
+                const textColors = {
+                  white: 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]',
+                  red: 'text-[#B30A0A] drop-shadow-[0_0_8px_rgba(179,10,10,0.8)]',
+                  blue: 'text-[#0A109E] drop-shadow-[0_0_8px_rgba(10,16,158,0.8)]',
+                  green: 'text-[#10B981] drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]',
+                  gold: 'text-[#FFD700] drop-shadow-[0_0_8px_rgba(255,215,0,0.8)]',
+                };
                 const activeBorderClass = partner.borderColor ? borderColors[partner.borderColor] : 'border-white/10 group-hover:border-authomia-blue/50';
                 const activeImageBorderClass = partner.borderColor ? borderColors[partner.borderColor] : 'border-white/10 group-hover:border-authomia-blue/50';
+                const activeTextClass = partner.borderColor ? textColors[partner.borderColor] : textColors.white;
 
                 return (
                   <motion.div 
@@ -129,15 +168,15 @@ const Clients: React.FC<ClientsProps> = ({ content }) => {
                      onMouseEnter={() => setHoveredPartnerId(partner.id)}
                      onMouseLeave={() => setHoveredPartnerId(null)}
                      onClick={() => setSelectedPartner(partner)}
-                     className={`group relative h-[400px] bg-[#08090B] border rounded-sm p-8 overflow-hidden cursor-none flex flex-col justify-between transition-all duration-500 preserve-3d ${activeBorderClass}`}
+                     className={`group relative min-w-[320px] md:min-w-[400px] snap-center h-auto min-h-[450px] bg-[#08090B] border rounded-sm p-8 overflow-hidden cursor-none flex flex-col justify-between transition-all duration-500 preserve-3d ${activeBorderClass}`}
                   >
                      <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                      
-                     <div className="relative z-10">
+                     <div className="relative z-10 flex-1 flex flex-col">
                         {/* Company Title */}
                         <div className="mb-6">
-                           <h3 className="text-lg font-bold font-mono text-white mb-1 tracking-wide">{partner.companyName}</h3>
-                           <p className="text-xs text-authomia-blueLight font-mono uppercase tracking-widest">{partner.personName}</p>
+                           <h3 className="text-2xl font-bold font-mono text-white mb-1 tracking-wide">{partner.companyName}</h3>
+                           <p className={`text-xs font-mono uppercase tracking-widest ${activeTextClass}`}>{partner.personName}</p>
                         </div>
 
                         {/* Profile Image */}
@@ -146,12 +185,12 @@ const Clients: React.FC<ClientsProps> = ({ content }) => {
                         </div>
 
                         {/* Quote */}
-                        <p className="text-sm font-light text-white/60 italic leading-relaxed">
+                        <p className="text-sm font-light text-white/60 italic leading-relaxed flex-1">
                           "{partner.quote}"
                         </p>
                      </div>
 
-                     <div className="relative z-10 pt-6 border-t border-white/5 flex justify-between items-center opacity-50 group-hover:opacity-100 transition-opacity">
+                     <div className="relative z-10 pt-6 mt-6 border-t border-white/5 flex justify-between items-center opacity-50 group-hover:opacity-100 transition-opacity">
                         <span className="text-[10px] font-mono uppercase">Legacy Status: Active</span>
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]" />
                      </div>
@@ -169,7 +208,7 @@ const Clients: React.FC<ClientsProps> = ({ content }) => {
                      initial={{ opacity: 0, y: 20 }}
                      whileInView={{ opacity: 1, y: 0 }}
                      viewport={{ once: true }}
-                     className="group relative h-[400px] bg-gradient-to-b from-authomia-blue/10 to-transparent border border-authomia-blue/30 rounded-sm p-1 overflow-hidden"
+                     className="group relative min-w-[320px] md:min-w-[400px] snap-center h-auto min-h-[450px] bg-gradient-to-b from-authomia-blue/10 to-transparent border border-authomia-blue/30 rounded-sm p-1 overflow-hidden"
                   >
                      {/* Active Scan Animation */}
                      <div className="absolute top-0 left-0 w-full h-[2px] bg-authomia-blue shadow-[0_0_20px_rgba(0,240,255,1)] animate-[scan_3s_ease-in-out_infinite]" />
@@ -204,7 +243,7 @@ const Clients: React.FC<ClientsProps> = ({ content }) => {
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
                     viewport={{ once: true }}
-                    className="h-[400px] bg-[#020202] border border-white/5 rounded-sm p-6 flex flex-col justify-center items-center opacity-60 grayscale hover:opacity-80 transition-opacity"
+                    className="min-w-[320px] md:min-w-[400px] snap-center h-auto min-h-[450px] bg-[#020202] border border-white/5 rounded-sm p-6 flex flex-col justify-center items-center opacity-60 grayscale hover:opacity-80 transition-opacity"
                  >
                     <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/10">
                        <Lock className="w-6 h-6 text-white/30" />
