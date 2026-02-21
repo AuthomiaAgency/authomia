@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Check, AlertCircle, ExternalLink } from 'lucide-react';
+import { db } from '../lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface SurveyQuestion {
   id: string;
@@ -32,17 +34,27 @@ const Survey: React.FC = () => {
   const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-    const savedSurveys = localStorage.getItem('authomia_surveys');
-    
-    if (id && savedSurveys) {
-      const found = JSON.parse(savedSurveys).find((s: any) => s.id === id);
-      if (found) {
-         setSurvey(found);
-         if (!found.introTitle) setShowIntro(false);
+    const fetchSurvey = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      
+      if (id) {
+        try {
+          const sDoc = await getDoc(doc(db, 'appData', 'surveys'));
+          if (sDoc.exists()) {
+            const allSurveys = sDoc.data().items || [];
+            const found = allSurveys.find((s: any) => s.id === id);
+            if (found) {
+               setSurvey(found);
+               if (!found.introTitle) setShowIntro(false);
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching survey", e);
+        }
       }
-    }
+    };
+    fetchSurvey();
   }, []);
 
   const handleAnswer = (val: string) => {
@@ -76,20 +88,27 @@ const Survey: React.FC = () => {
     }
   };
 
-  const submitSurvey = () => {
+  const submitSurvey = async () => {
     if (!survey) return;
     const newResponse = { date: new Date().toISOString(), answers };
     
-    // Update local storage
-    const allSurveys = JSON.parse(localStorage.getItem('authomia_surveys') || '[]');
-    const updatedSurveys = allSurveys.map((s: any) => {
-       if (s.id === survey.id) {
-          return { ...s, responses: [...(s.responses || []), newResponse] };
-       }
-       return s;
-    });
-    localStorage.setItem('authomia_surveys', JSON.stringify(updatedSurveys));
-    setCompleted(true);
+    try {
+      const sDoc = await getDoc(doc(db, 'appData', 'surveys'));
+      if (sDoc.exists()) {
+        const allSurveys = sDoc.data().items || [];
+        const updatedSurveys = allSurveys.map((s: any) => {
+           if (s.id === survey.id) {
+              return { ...s, responses: [...(s.responses || []), newResponse] };
+           }
+           return s;
+        });
+        await setDoc(doc(db, 'appData', 'surveys'), { items: updatedSurveys });
+      }
+      setCompleted(true);
+    } catch (e) {
+      console.error("Error saving survey response", e);
+      setError('Hubo un error al guardar tu respuesta. Por favor, intenta de nuevo.');
+    }
   };
 
   if (!survey) return <div className="min-h-screen bg-[#020202] flex items-center justify-center text-white font-mono">Cargando Protocolo...</div>;

@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Content } from '../types';
 import { Server, Lock, ChevronRight, X, ExternalLink, Linkedin, Instagram, Facebook, Twitter, Youtube, Globe, Link as LinkIcon } from 'lucide-react';
 import Modal from './Modals';
+import { db } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface ClientsProps {
   content: Content['clients'];
@@ -59,10 +61,17 @@ const Clients: React.FC<ClientsProps> = ({ content }) => {
   }, [selectedPartner]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('authomia_partners');
-    if (saved) {
-      setPartners(JSON.parse(saved));
-    }
+    const fetchPartners = async () => {
+      try {
+        const pDoc = await getDoc(doc(db, 'appData', 'partners'));
+        if (pDoc.exists()) {
+          setPartners(pDoc.data().items || []);
+        }
+      } catch (e) {
+        console.error("Error fetching partners", e);
+      }
+    };
+    fetchPartners();
   }, []);
 
   // Custom Cursor Logic

@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Lock, Save, Trash2, Plus, LogOut, FileText, Users, BarChart2, ExternalLink, Link, Image as ImageIcon, Send, ArrowRight, Palette } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { db, auth } from '../lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+
 // --- TYPES ---
 interface Partner {
   id: string;
@@ -73,31 +77,48 @@ const Manager: React.FC = () => {
 
   // LOAD DATA
   useEffect(() => {
-    const auth = sessionStorage.getItem('authomia_manager_auth');
-    if (auth === 'true') setIsAuthenticated(true);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    });
 
-    const savedPartners = localStorage.getItem('authomia_partners');
-    if (savedPartners) setPartners(JSON.parse(savedPartners));
+    const loadData = async () => {
+      try {
+        const pDoc = await getDoc(doc(db, 'appData', 'partners'));
+        if (pDoc.exists()) setPartners(pDoc.data().items || []);
 
-    const savedPubs = localStorage.getItem('authomia_publications');
-    if (savedPubs) setPublications(JSON.parse(savedPubs));
+        const pubDoc = await getDoc(doc(db, 'appData', 'publications'));
+        if (pubDoc.exists()) setPublications(pubDoc.data().items || []);
 
-    const savedSurveys = localStorage.getItem('authomia_surveys');
-    if (savedSurveys) setSurveys(JSON.parse(savedSurveys));
+        const sDoc = await getDoc(doc(db, 'appData', 'surveys'));
+        if (sDoc.exists()) setSurveys(sDoc.data().items || []);
+      } catch (e) {
+        console.error("Error loading data from Firebase", e);
+      }
+    };
+    loadData();
+
+    return () => unsubscribe();
   }, []);
 
   // SAVE HELPERS
-  const savePartnersToStorage = (data: Partner[]) => {
+  const savePartnersToStorage = async (data: Partner[]) => {
+    if (!auth.currentUser) return;
     setPartners(data);
-    localStorage.setItem('authomia_partners', JSON.stringify(data));
+    await setDoc(doc(db, 'appData', 'partners'), { items: data });
   };
-  const savePubsToStorage = (data: Publication[]) => {
+  const savePubsToStorage = async (data: Publication[]) => {
+    if (!auth.currentUser) return;
     setPublications(data);
-    localStorage.setItem('authomia_publications', JSON.stringify(data));
+    await setDoc(doc(db, 'appData', 'publications'), { items: data });
   };
-  const saveSurveysToStorage = (data: Survey[]) => {
+  const saveSurveysToStorage = async (data: Survey[]) => {
+    if (!auth.currentUser) return;
     setSurveys(data);
-    localStorage.setItem('authomia_surveys', JSON.stringify(data));
+    await setDoc(doc(db, 'appData', 'surveys'), { items: data });
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
@@ -111,12 +132,12 @@ const Manager: React.FC = () => {
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === 'authomia.agency@gmail.com' && password === 'M@xCB_2026') {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('authomia_manager_auth', 'true');
-    } else {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      setError('');
+    } catch (err) {
       setError('Access Denied. Invalid credentials.');
     }
   };
@@ -169,7 +190,7 @@ const Manager: React.FC = () => {
              <button onClick={() => setActiveTab('surveys')} className={`px-4 py-2 text-xs font-mono uppercase rounded-md transition-all ${activeTab === 'surveys' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}>Encuestas</button>
           </div>
 
-          <button onClick={() => { setIsAuthenticated(false); sessionStorage.removeItem('authomia_manager_auth'); }} className="text-red-400 text-xs font-mono flex items-center gap-2"><LogOut className="w-4 h-4" /> EXIT</button>
+          <button onClick={() => { signOut(auth); setIsAuthenticated(false); }} className="text-red-400 text-xs font-mono flex items-center gap-2"><LogOut className="w-4 h-4" /> EXIT</button>
         </header>
 
         {/* --- PARTNERS TAB --- */}

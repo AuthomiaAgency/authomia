@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Calendar, ArrowRight, Lock, ImageOff } from 'lucide-react';
 import { LOGO_ICON_URL } from '../constants';
+import { db } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface PublicationBlock {
   type: 'text' | 'image' | 'button' | 'heading' | 'quote' | 'divider' | 'video';
@@ -26,15 +28,18 @@ const Publications: React.FC = () => {
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('authomia_publications');
-      if (saved) {
-        setPubs(JSON.parse(saved));
+    const fetchPubs = async () => {
+      try {
+        const pDoc = await getDoc(doc(db, 'appData', 'publications'));
+        if (pDoc.exists()) {
+          setPubs(pDoc.data().items || []);
+        }
+      } catch (e) {
+        console.error("Failed to load publications", e);
+        setHasError(true);
       }
-    } catch (e) {
-      console.error("Failed to load publications", e);
-      setHasError(true);
-    }
+    };
+    fetchPubs();
   }, []);
 
   // Safe logo fallback
