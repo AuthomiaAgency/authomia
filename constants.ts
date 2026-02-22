@@ -1,7 +1,7 @@
 import { Content, Language } from './types';
 
 export const LOGO_TEXT_URL = "https://imgur.com/h6YsFBg.png";
-export const LOGO_ICON_URL = "https://imgur.com/R48vhCC.png";
+export const LOGO_ICON_URL = "https://lh3.googleusercontent.com/a/ACg8ocJm6J1CFWtP53KiJT18j3NSLQBU6bJpEOle5eMYXLMiSO8CbEw=s288-c-no";
 
 export const CONTENT: Record<Language, Content> = {
   es: {
