@@ -15,6 +15,7 @@ import Modal from './components/Modals';
 import Manager from './components/Manager';
 import Publications from './components/Publications';
 import Survey from './components/Survey';
+import Mifo from './components/Mifo';
 import QuestionnairePage from './components/QuestionnairePage'; // NEW PAGE COMPONENT
 import ProtocolsOverlay from './components/ProtocolsOverlay';
 import WhoWeAreOverlay from './components/WhoWeAreOverlay';
@@ -29,6 +30,7 @@ const App: React.FC = () => {
   if (path === '/manager') return <Manager />;
   if (path === '/publicaciones') return <Publications />;
   if (path === '/encuesta') return <Survey />;
+  if (path === '/material') return <Mifo />;
   if (path === '/cuestionario') return <QuestionnairePage />; // Independent Page
 
   const [lang, setLang] = useState<Language>('es');

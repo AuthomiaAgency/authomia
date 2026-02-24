@@ -21,9 +21,11 @@ interface Partner {
 }
 
 interface PublicationBlock {
-  type: 'text' | 'image' | 'button';
+  type: 'text' | 'image' | 'button' | 'heading' | 'quote' | 'video' | 'divider';
   content: string; // text content, image url, or button label
   extra?: string; // button url
+  buttonColor?: string;
+  icon?: string;
 }
 
 interface Publication {
@@ -57,23 +59,37 @@ interface Survey {
   ctaLink?: string;
 }
 
+interface MaterialLead {
+  email: string;
+  date: string;
+}
+
+interface Material {
+  id: string;
+  title: string;
+  type: 'mifo';
+  leads: MaterialLead[];
+}
+
 // --- COMPONENT ---
 const Manager: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'partners' | 'publications' | 'surveys'>('partners');
+  const [activeTab, setActiveTab] = useState<'partners' | 'publications' | 'surveys' | 'materials'>('partners');
 
   // DATA STATES
   const [partners, setPartners] = useState<Partner[]>([]);
   const [publications, setPublications] = useState<Publication[]>([]);
   const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
 
   // EDITING STATES
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [editingPub, setEditingPub] = useState<Publication | null>(null);
   const [editingSurvey, setEditingSurvey] = useState<Survey | null>(null);
+  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
 
   // LOAD DATA
   useEffect(() => {
@@ -95,6 +111,9 @@ const Manager: React.FC = () => {
 
         const sDoc = await getDoc(doc(db, 'appData', 'surveys'));
         if (sDoc.exists()) setSurveys(sDoc.data().items || []);
+
+        const mDoc = await getDoc(doc(db, 'appData', 'materials'));
+        if (mDoc.exists()) setMaterials(mDoc.data().items || []);
       } catch (e) {
         console.error("Error loading data from Firebase", e);
       }
@@ -119,6 +138,11 @@ const Manager: React.FC = () => {
     if (!auth.currentUser) return;
     setSurveys(data);
     await setDoc(doc(db, 'appData', 'surveys'), { items: data });
+  };
+  const saveMaterialsToStorage = async (data: Material[]) => {
+    if (!auth.currentUser) return;
+    setMaterials(data);
+    await setDoc(doc(db, 'appData', 'materials'), { items: data });
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
@@ -184,10 +208,11 @@ const Manager: React.FC = () => {
         <header className="flex flex-col md:flex-row justify-between items-center mb-10 border-b border-white/10 pb-6 gap-6">
           <h1 className="text-2xl font-light tracking-tight">System Control</h1>
           
-          <div className="flex gap-2 bg-white/5 p-1 rounded-lg">
-             <button onClick={() => setActiveTab('partners')} className={`px-4 py-2 text-xs font-mono uppercase rounded-md transition-all ${activeTab === 'partners' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}>Partners</button>
-             <button onClick={() => setActiveTab('publications')} className={`px-4 py-2 text-xs font-mono uppercase rounded-md transition-all ${activeTab === 'publications' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}>Publicaciones</button>
-             <button onClick={() => setActiveTab('surveys')} className={`px-4 py-2 text-xs font-mono uppercase rounded-md transition-all ${activeTab === 'surveys' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}>Encuestas</button>
+          <div className="flex gap-2 bg-white/5 p-1 rounded-lg overflow-x-auto">
+             <button onClick={() => setActiveTab('partners')} className={`px-4 py-2 text-xs font-mono uppercase rounded-md transition-all whitespace-nowrap ${activeTab === 'partners' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}>Partners</button>
+             <button onClick={() => setActiveTab('publications')} className={`px-4 py-2 text-xs font-mono uppercase rounded-md transition-all whitespace-nowrap ${activeTab === 'publications' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}>Publicaciones</button>
+             <button onClick={() => setActiveTab('surveys')} className={`px-4 py-2 text-xs font-mono uppercase rounded-md transition-all whitespace-nowrap ${activeTab === 'surveys' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}>Encuestas</button>
+             <button onClick={() => setActiveTab('materials')} className={`px-4 py-2 text-xs font-mono uppercase rounded-md transition-all whitespace-nowrap ${activeTab === 'materials' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}>Materiales</button>
           </div>
 
           <button onClick={() => { signOut(auth); setIsAuthenticated(false); }} className="text-red-400 text-xs font-mono flex items-center gap-2"><LogOut className="w-4 h-4" /> EXIT</button>
@@ -580,6 +605,93 @@ const Manager: React.FC = () => {
 
                    </div>
                 ) : <div className="h-full flex items-center justify-center opacity-30 text-sm font-mono">Select or Create Survey</div>}
+             </div>
+          </div>
+        )}
+
+        {/* --- MATERIALS TAB --- */}
+        {activeTab === 'materials' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+             {/* List */}
+             <div className="space-y-4">
+                <button 
+                  onClick={() => setEditingMaterial({ id: Date.now().toString(), title: 'Nuevo Material MIFO', type: 'mifo', leads: [] })}
+                  className="w-full py-4 border border-dashed border-white/20 text-white/50 hover:text-white hover:border-white/50 flex items-center justify-center gap-2 font-mono text-xs uppercase"
+                >
+                  <Plus className="w-4 h-4" /> Add Material
+                </button>
+                {materials.map(m => (
+                   <div key={m.id} onClick={() => setEditingMaterial(m)} className="p-4 border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] cursor-pointer flex justify-between items-center group">
+                      <div><h3 className="font-bold text-sm">{m.title}</h3><p className="text-xs text-white/50 uppercase">{m.type}</p></div>
+                      <button onClick={(e) => { e.stopPropagation(); saveMaterialsToStorage(materials.filter(x => x.id !== m.id)); if(editingMaterial?.id === m.id) setEditingMaterial(null); }} className="text-white/20 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                   </div>
+                ))}
+             </div>
+             {/* Editor */}
+             <div className="col-span-2 bg-[#08090B] border border-white/10 p-8 rounded-sm">
+                {editingMaterial ? (
+                   <div className="space-y-6">
+                      <div className="flex justify-between items-center">
+                         <h2 className="text-authomia-blueLight font-mono">Editing Material</h2>
+                         <span className="text-xs text-white/30">{editingMaterial.id}</span>
+                      </div>
+                      
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Título del Material</label>
+                         <input className="w-full bg-white/5 border border-white/10 p-3 text-white text-sm" placeholder="Título" value={editingMaterial.title} onChange={e => setEditingMaterial({...editingMaterial, title: e.target.value})} />
+                      </div>
+
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Tipo</label>
+                         <select className="w-full bg-white/5 border border-white/10 p-3 text-white text-sm" value={editingMaterial.type} onChange={e => setEditingMaterial({...editingMaterial, type: e.target.value as any})}>
+                            <option value="mifo">MIFO (Matriz de Fricción)</option>
+                         </select>
+                      </div>
+
+                      <div className="p-4 bg-authomia-blue/10 border border-authomia-blue/20 rounded-sm">
+                         <p className="text-xs font-mono text-authomia-blueLight mb-2">Enlace para compartir:</p>
+                         <div className="flex gap-2">
+                            <input readOnly value={`${window.location.origin}/material?material=${editingMaterial.id}`} className="flex-1 bg-black/50 border border-white/10 p-2 text-xs text-white/70" />
+                            <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/material?material=${editingMaterial.id}`)} className="px-4 bg-white/10 hover:bg-white/20 text-xs font-mono">COPY</button>
+                         </div>
+                      </div>
+
+                      <button onClick={() => { 
+                         const exists = materials.find(m => m.id === editingMaterial.id);
+                         const newMaterials = exists ? materials.map(m => m.id === editingMaterial.id ? editingMaterial : m) : [...materials, editingMaterial];
+                         saveMaterialsToStorage(newMaterials); 
+                         alert('Material Saved!');
+                      }} className="w-full bg-authomia-blue py-3 text-sm font-mono tracking-widest hover:bg-authomia-blueLight flex items-center justify-center gap-2"><Save size={16}/> SAVE MATERIAL</button>
+
+                      {/* LEADS SECTION */}
+                      <div className="border-t border-white/10 pt-8 mt-8">
+                         <h3 className="text-sm font-mono text-authomia-blueLight mb-6 flex items-center gap-2"><Users size={16}/> LEADS CAPTURADOS ({editingMaterial.leads?.length || 0})</h3>
+                         <div className="bg-white/[0.02] border border-white/5 rounded-sm overflow-hidden">
+                            {editingMaterial.leads?.length > 0 ? (
+                               <table className="w-full text-left text-sm">
+                                  <thead className="bg-white/5 text-xs font-mono text-white/50 uppercase">
+                                     <tr>
+                                        <th className="p-4 font-normal">Email</th>
+                                        <th className="p-4 font-normal">Fecha</th>
+                                     </tr>
+                                  </thead>
+                                  <tbody>
+                                     {editingMaterial.leads.map((lead, idx) => (
+                                        <tr key={idx} className="border-t border-white/5 hover:bg-white/[0.02]">
+                                           <td className="p-4 text-white/90">{lead.email}</td>
+                                           <td className="p-4 text-white/50 text-xs">{new Date(lead.date).toLocaleString()}</td>
+                                        </tr>
+                                     ))}
+                                  </tbody>
+                               </table>
+                            ) : (
+                               <div className="p-8 text-center text-white/30 text-sm font-mono">No hay leads capturados aún.</div>
+                            )}
+                         </div>
+                      </div>
+
+                   </div>
+                ) : <div className="h-full flex items-center justify-center opacity-30 text-sm font-mono">Select or Create Material</div>}
              </div>
           </div>
         )}
