@@ -245,6 +245,14 @@ export default function Mifo() {
   ];
 
   const highRiskProcesses = processes.filter(p => p.dependency > 80 || p.mentalLoad > 8);
+  
+  // Dynamic Roadmap Calculations
+  const highestDependencyProcess = [...processes].sort((a, b) => b.dependency - a.dependency)[0] || processes[0];
+  const highestMentalLoadProcess = [...processes].sort((a, b) => b.mentalLoad - a.mentalLoad)[0] || processes[0];
+  const mostFrequentProcess = [...processes].sort((a, b) => {
+    const freqWeight = { 'Diaria': 3, 'Semanal': 2, 'Mensual': 1 };
+    return freqWeight[b.frequency] - freqWeight[a.frequency];
+  })[0] || processes[0];
 
   return (
     <div className="min-h-screen bg-[#000000] text-white font-sans relative overflow-hidden selection:bg-authomia-blueLight/30">
@@ -557,17 +565,40 @@ export default function Mifo() {
 
                   <h3 className="text-xs font-mono uppercase tracking-widest text-white/50 mt-8 mb-4">Hoja de Ruta Recomendada</h3>
                   <div className="space-y-4">
-                    <div className="flex gap-4 items-center bg-white/[0.02] border border-white/5 p-4">
-                      <div className="text-authomia-blueLight font-mono font-bold">01</div>
-                      <div className="text-sm text-white/80">Documentar los procesos con dependencia mayor al 70%.</div>
+                    <div className="flex gap-4 items-start bg-white/[0.02] border border-white/5 p-6 rounded-sm">
+                      <div className="text-authomia-blueLight font-mono font-bold mt-1 text-lg">01</div>
+                      <div>
+                        <h4 className="text-base font-bold text-white mb-2">Desvinculación Operativa del Fundador</h4>
+                        <p className="text-sm text-white/70 leading-relaxed">
+                          El diagnóstico indica una dependencia promedio del <strong className="text-white">{Math.round(avgDependency)}%</strong>. El riesgo estructural se concentra en procesos como <strong className="text-white">"{highestDependencyProcess.name || 'tu tarea principal'}"</strong>, donde tu intervención directa es del <strong className="text-white">{highestDependencyProcess.dependency}%</strong>. 
+                          <br/><br/>
+                          <span className="text-authomia-blueLight">Acción Realista:</span> La recomendación corporativa no es una delegación superficial, sino la extracción de tu "Criterio de Decisión". Transforma la intuición con la que ejecutas esta tarea en un árbol de decisiones lógico (SOP avanzado). Graba un video de 5 minutos ejecutando la tarea y pide a un miembro de tu equipo que redacte el paso a paso. Esto permitirá que un perfil operativo o un sistema asuma el 80% de la carga, reservando tu tiempo únicamente para la validación final o el manejo de excepciones críticas.
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex gap-4 items-center bg-white/[0.02] border border-white/5 p-4">
-                      <div className="text-authomia-blueLight font-mono font-bold">02</div>
-                      <div className="text-sm text-white/80">Sistematizar la lógica de decisión (Quitar la carga mental humana).</div>
+                    
+                    <div className="flex gap-4 items-start bg-white/[0.02] border border-white/5 p-6 rounded-sm">
+                      <div className="text-authomia-blueLight font-mono font-bold mt-1 text-lg">02</div>
+                      <div>
+                        <h4 className="text-base font-bold text-white mb-2">Reducción de Fricción Cognitiva</h4>
+                        <p className="text-sm text-white/70 leading-relaxed">
+                          Has asignado una carga mental de <strong className="text-white">{highestMentalLoadProcess.mentalLoad}/10</strong> a tareas como <strong className="text-white">"{highestMentalLoadProcess.name || 'gestión diaria'}"</strong>. Esta fricción drena tu ancho de banda estratégico, limitando el crecimiento real del negocio por fatiga de decisión.
+                          <br/><br/>
+                          <span className="text-authomia-blueLight">Acción Realista:</span> Debes implementar un "Triage Operativo". Desglosa este proceso en variables predecibles e impredecibles. Sistematiza las predecibles mediante reglas estrictas, plantillas de respuesta o macros. Al eliminar la micro-gestión de lo cotidiano y establecer límites claros ("Si pasa X, hacer Y"), recuperas la claridad mental necesaria para enfocarte en actividades de alto apalancamiento como ventas, alianzas y estrategia.
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex gap-4 items-center bg-white/[0.02] border border-white/5 p-4">
-                      <div className="text-authomia-blueLight font-mono font-bold">03</div>
-                      <div className="text-sm text-white/80">Implementar IA y Automatización para ejecución a costo marginal cero.</div>
+
+                    <div className="flex gap-4 items-start bg-white/[0.02] border border-white/5 p-6 rounded-sm">
+                      <div className="text-authomia-blueLight font-mono font-bold mt-1 text-lg">03</div>
+                      <div>
+                        <h4 className="text-base font-bold text-white mb-2">Ecosistema de Automatización</h4>
+                        <p className="text-sm text-white/70 leading-relaxed">
+                          Tu operación presenta un <strong className="text-white">{Math.round(automationPotential)}%</strong> de potencial de automatización. Tareas de ejecución <strong className="text-white">{mostFrequentProcess.frequency.toLowerCase()}</strong> como <strong className="text-white">"{mostFrequentProcess.name || 'actualización de datos'}"</strong> son el punto de partida ideal para escalar sin aumentar la planilla.
+                          <br/><br/>
+                          <span className="text-authomia-blueLight">Acción Realista:</span> En lugar de contratar más personal para absorber este volumen, la estrategia es mapear el flujo de datos (de dónde viene la información y a dónde debe ir) e implementar una capa de integración (usando Make, Zapier o APIs nativas). Esto transforma un proceso propenso al error humano y al cansancio en un activo tecnológico de ejecución instantánea, operando 24/7 a un costo marginal cercano a cero.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
