@@ -28,7 +28,7 @@ const App: React.FC = () => {
   // ROUTING LOGIC
   const path = window.location.pathname;
   if (path === '/manager') return <Manager />;
-  if (path === '/publicaciones') return <Publications />;
+  if (path.startsWith('/publicaciones')) return <Publications />;
   if (path === '/encuesta') return <Survey />;
   if (path === '/material') return <Mifo />;
   if (path === '/cuestionario') return <QuestionnairePage />; // Independent Page

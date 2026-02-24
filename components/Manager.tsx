@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Save, Trash2, Plus, LogOut, FileText, Users, BarChart2, ExternalLink, Link, Image as ImageIcon, Send, ArrowRight, Palette } from 'lucide-react';
+import { Lock, Save, Trash2, Plus, LogOut, FileText, Users, BarChart2, ExternalLink, Link, Image as ImageIcon, Send, ArrowRight, Palette, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { db, auth } from '../lib/firebase';
@@ -21,7 +21,7 @@ interface Partner {
 }
 
 interface PublicationBlock {
-  type: 'text' | 'image' | 'button' | 'heading' | 'quote' | 'video' | 'divider';
+  type: 'text' | 'image' | 'button' | 'heading' | 'h2' | 'h3' | 'h4' | 'quote' | 'video' | 'divider';
   content: string; // text content, image url, or button label
   extra?: string; // button url
   buttonColor?: string;
@@ -31,6 +31,9 @@ interface PublicationBlock {
 interface Publication {
   id: string;
   title: string;
+  slug?: string;
+  seoTitle?: string;
+  seoDescription?: string;
   date: string;
   coverImage: string;
   excerpt: string;
@@ -386,11 +389,20 @@ const Manager: React.FC = () => {
                    </div>
                 ))}
              </div>
-             <div className="col-span-2 bg-[#08090B] border border-white/10 p-8 rounded-sm h-[80vh] overflow-y-auto">
+              <div className="col-span-2 bg-[#08090B] border border-white/10 p-8 rounded-sm h-[80vh] overflow-y-auto">
                 {editingPub ? (
                    <div className="space-y-6">
                       <div className="flex justify-between"><h2 className="text-authomia-blueLight font-mono">Editing Post</h2><span className="text-xs text-white/30">{editingPub.id}</span></div>
                       <input className="w-full bg-white/5 border border-white/10 p-2 text-white font-bold text-lg" placeholder="Title" value={editingPub.title} onChange={e => setEditingPub({...editingPub, title: e.target.value})} />
+                      
+                      {/* SEO Fields */}
+                      <div className="space-y-2 p-4 border border-white/5 bg-white/[0.01]">
+                        <h3 className="text-xs font-mono text-white/50 uppercase tracking-widest mb-2">SEO Settings</h3>
+                        <input className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm outline-none focus:border-authomia-blueLight transition-colors" placeholder="URL Slug (e.g., mi-articulo-seo)" value={editingPub.slug || ''} onChange={e => setEditingPub({...editingPub, slug: e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')})} />
+                        <input className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm outline-none focus:border-authomia-blueLight transition-colors" placeholder="SEO Title (Meta Title)" value={editingPub.seoTitle || ''} onChange={e => setEditingPub({...editingPub, seoTitle: e.target.value})} />
+                        <textarea className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm outline-none focus:border-authomia-blueLight transition-colors h-16 resize-none" placeholder="SEO Description (Meta Description)" value={editingPub.seoDescription || ''} onChange={e => setEditingPub({...editingPub, seoDescription: e.target.value})} />
+                      </div>
+
                       <input className="w-full bg-white/5 border border-white/10 p-2 text-white" type="date" value={editingPub.date} onChange={e => setEditingPub({...editingPub, date: e.target.value})} />
                       
                       <div className="space-y-2">
@@ -414,10 +426,13 @@ const Manager: React.FC = () => {
                          <div className="space-y-4 mb-4">
                             {editingPub.blocks.map((block, idx) => (
                                <div key={idx} className="p-4 border border-white/5 bg-white/[0.02] relative group">
-                                  <button onClick={() => { const newBlocks = [...editingPub.blocks]; newBlocks.splice(idx, 1); setEditingPub({...editingPub, blocks: newBlocks}); }} className="absolute top-2 right-2 text-white/20 hover:text-red-500"><XIcon /></button>
+                                  <button onClick={() => { const newBlocks = [...editingPub.blocks]; newBlocks.splice(idx, 1); setEditingPub({...editingPub, blocks: newBlocks}); }} className="absolute top-2 right-2 text-white/20 hover:text-red-500"><X className="w-4 h-4" /></button>
                                   <div className="text-[10px] uppercase text-white/30 mb-2">{block.type}</div>
                                   {block.type === 'text' && <textarea className="w-full bg-transparent border-none outline-none text-white h-24 resize-none" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Type text content..." />}
-                                  {block.type === 'heading' && <input className="w-full bg-transparent border-b border-white/10 outline-none text-white text-lg pb-1" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Type heading..." />}
+                                  {block.type === 'heading' && <input className="w-full bg-transparent border-b border-white/10 outline-none text-white text-2xl pb-1 font-bold" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Type Heading 1..." />}
+                                  {block.type === 'h2' && <input className="w-full bg-transparent border-b border-white/10 outline-none text-white text-xl pb-1 font-semibold" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Type Heading 2..." />}
+                                  {block.type === 'h3' && <input className="w-full bg-transparent border-b border-white/10 outline-none text-white text-lg pb-1 font-medium" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Type Heading 3..." />}
+                                  {block.type === 'h4' && <input className="w-full bg-transparent border-b border-white/10 outline-none text-white text-base pb-1 font-medium" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Type Heading 4..." />}
                                   {block.type === 'quote' && (
                                      <div className="space-y-2">
                                         <textarea className="w-full bg-transparent border-none outline-none text-white h-20 resize-none italic" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Type quote..." />
@@ -451,7 +466,10 @@ const Manager: React.FC = () => {
                             ))}
                          </div>
                          <div className="flex flex-wrap gap-2">
-                            <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'heading', content: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2">Heading</button>
+                            <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'heading', content: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2">H1</button>
+                            <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'h2', content: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2">H2</button>
+                            <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'h3', content: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2">H3</button>
+                            <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'h4', content: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2">H4</button>
                             <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'text', content: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2"><FileText size={12}/> Text</button>
                             <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'quote', content: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2">Quote</button>
                             <button onClick={() => setEditingPub({...editingPub, blocks: [...editingPub.blocks, { type: 'image', content: '' }]})} className="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-mono flex items-center gap-2"><ImageIcon size={12}/> Image</button>
