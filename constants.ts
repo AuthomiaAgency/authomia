@@ -3,6 +3,10 @@ import { Content, Language } from './types';
 export const LOGO_TEXT_URL = "https://imgur.com/h6YsFBg.png";
 export const LOGO_ICON_URL = "https://lh3.googleusercontent.com/a/ACg8ocJm6J1CFWtP53KiJT18j3NSLQBU6bJpEOle5eMYXLMiSO8CbEw=s288-c-no";
 
+// DOMAIN CONFIGURATION
+export const MAIN_DOMAIN = "https://authomia.cloud";
+export const SUBDOMAIN_URL = "https://insights.authomia.cloud";
+
 export const CONTENT: Record<Language, Content> = {
   es: {
     hero: {
@@ -131,6 +135,36 @@ export const CONTENT: Record<Language, Content> = {
       },
       hook: "¿Aún no estás convencido? Sigue bajando..."
     },
+    detailedServices: {
+      blue: {
+        title: "BLUE DIAMOND PRIME™",
+        description: "La fase de inteligencia pura. Antes de escribir una sola línea de código, entendemos tu negocio mejor que nadie.",
+        items: [
+          { title: "Análisis de Flujos Empresariales", desc: "Mapeo exhaustivo de cada movimiento operativo para detectar ineficiencias invisibles." },
+          { title: "Detección de Oportunidades Tecnológicas", desc: "Evaluación de dónde la IA y la automatización generarán el mayor retorno inmediato (ROI)." },
+          { title: "Auditoría de Seguridad Digital", desc: "Revisión de vulnerabilidades críticas en la infraestructura actual (Opcional pero recomendado)." },
+          { title: "Roadmap de Implementación", desc: "El plano maestro. Un documento estratégico que te dice qué hacer, cuándo y cuánto costará." }
+        ]
+      },
+      red: {
+        title: "RED DIAMOND PRIME™",
+        description: "La fase de construcción. Transformamos el diagnóstico en sistemas vivos, autónomos y rentables. NOTA: Los siguientes son solo algunos ejemplos de nuestro catálogo integrado de soluciones.",
+        items: [
+          { title: "Diagnóstico de Madurez IA", desc: "Evaluación del nivel real de adopción de IA, identificando riesgos y retorno esperado antes de implementar.", icon: "Brain" },
+          { title: "Asistentes Inteligentes (AI Assistants)", desc: "Diseño de agentes entrenados con data de tu negocio para soporte, ventas o gestión operativa interna.", icon: "Bot" },
+          { title: "Chatbots Multicanal", desc: "Sistemas avanzados en WhatsApp/Web que no solo responden, sino que ejecutan acciones y cierran procesos.", icon: "MessageSquare" },
+          { title: "Automatización de Atención (Customer Ops)", desc: "Clasificación, respuesta y derivación automática de consultas para reducir la carga operativa humana.", icon: "Headphones" },
+          { title: "Procesamiento Inteligente de Documentos (IDP)", desc: "Lectura y extracción automática de datos desde facturas, contratos y reportes PDF/físicos.", icon: "FileText" },
+          { title: "Automatización de Procesos (RPA)", desc: "Robots de software que ejecutan tareas repetitivas administrativas, financieras y logísticas 24/7.", icon: "Cpu" },
+          { title: "Automatización de Ventas (CRM)", desc: "Sistemas de seguimiento automático de leads, recordatorios y cierre para que ningún cliente se enfríe.", icon: "TrendingUp" },
+          { title: "Automatización de Marketing", desc: "Flujos de nutrición, segmentación y reactivación de clientes basados en comportamiento real.", icon: "Megaphone" },
+          { title: "Dashboards & BI Automatizado", desc: "Transformación de datos crudos en paneles de control visuales para toma de decisiones en tiempo real.", icon: "BarChart3" },
+          { title: "Desarrollo de Software a Medida", desc: "Creación de herramientas específicas (Custom Tools) cuando el software genérico no es suficiente.", icon: "Code" },
+          { title: "Integración de Sistemas (APIs)", desc: "Conexión fluida entre tu ERP, CRM y herramientas externas para que operen como un solo organismo.", icon: "Link" },
+          { title: "Ciberseguridad & Auditoría", desc: "Blindaje de la infraestructura digital y protocolos de seguridad para proteger los activos de información.", icon: "ShieldCheck" }
+        ]
+      }
+    },
     process: {
       title: "Arquitectura de Flujo Neural",
       bluePhase: {
@@ -192,7 +226,7 @@ export const CONTENT: Record<Language, Content> = {
     footer: {
       legal: ["Política de Privacidad", "Términos y Condiciones", "Aviso Legal"],
       social: ["LinkedIn", "Facebook", "Instagram"],
-      nav: ["Protocolos de Trabajo", "Quiénes Somos", "FAQ"],
+      nav: ["Protocolos de Trabajo", "Quiénes Somos", "Servicios y FAQs"],
       contact: "Contacto Oficial",
       copyright: "Authomia Agency © 2024. All Systems Operational."
     },
@@ -299,15 +333,13 @@ export const CONTENT: Record<Language, Content> = {
     faq: {
       title: "Centro de Resolución de Dudas (FAQ)",
       items: [
-        { question: "¿Cuál es la diferencia entre Blue y Red Diamond?", answer: "Blue Diamond Prime es la fase de inteligencia y diagnóstico (el plano del arquitecto). Red Diamond Prime es la fase de construcción e implementación técnica (la obra). No construimos sin planos." },
-        { question: "¿Qué información debe proporcionar el cliente?", answer: "Durante el proceso se pueden solicitar: Información operativa, Flujos de trabajo, Accesos controlados y Documentación interna necesaria. Todo se solicita bajo autorización expresa y con manejo responsable de la información." },
-        { question: "¿Authomia ejecuta sin aprobación del cliente?", answer: "No. Ninguna implementación se inicia sin: Diagnóstico presentado, Aprobación del cliente, Aceptación de términos y Confirmación formal." },
-        { question: "¿Qué tipo de empresas pueden trabajar con Authomia?", answer: "Trabajamos con: Empresas en operación, Negocios del mercado, Proyectos estructurados y Organizaciones que buscan claridad, control y escalabilidad." },
-        { question: "¿Ofrecen soporte o acompañamiento?", answer: "Sí. Durante la implementación se ofrece acompañamiento técnico y estratégico según el alcance definido. Posteriormente, ofrecemos planes de mantenimiento y evolución." },
-        { question: "¿Cómo inicio el proceso?", answer: "Desde el botón 'Iniciar Diagnóstico' o 'Qué podemos ofrecerle', donde se abre un cuestionario guiado y estructurado para evaluar su caso." },
-        { question: "¿Qué incluye exactamente el diagnóstico?", answer: "Incluye un mapeo exhaustivo de sus procesos actuales, identificación de cuellos de botella, diseño de la arquitectura de automatización ideal y una cotización exacta para la implementación." },
-        { question: "¿Cuánto tiempo toma el proceso?", answer: "El diagnóstico toma entre 7 a 14 días. La implementación depende de la complejidad detectada, variando generalmente entre 4 a 10 semanas." },
-        { question: "¿Cómo se manejan los costos?", answer: "El diagnóstico (Blue Diamond) tiene un costo fijo por consultoría estratégica. La implementación (Red Diamond) se cotiza a medida. Si decide implementar con nosotros, el costo del diagnóstico se bonifica." }
+        { question: "¿Cuál es la diferencia real entre Blue y Red Diamond?", answer: "Es la diferencia entre el plano y el edificio. Blue Diamond Prime™ es el servicio de consultoría estratégica: entregamos inteligencia, mapas de procesos y un plan de acción claro. Red Diamond Prime™ es la ejecución de ese plan: construimos el software, configuramos las IAs y automatizamos los procesos. Si contratas Red Diamond, el costo del Blue Diamond se bonifica al 100%." },
+        { question: "¿Qué necesito tener listo para empezar?", answer: "Solo voluntad de cambio y acceso a la información de tu negocio. No necesitas tener procesos perfectos ni tecnología avanzada; justamente para eso nos contratas. Durante la Fase 01, nosotros nos encargamos de extraer la información necesaria mediante entrevistas y auditorías guiadas." },
+        { question: "¿Cuánto tiempo tarda una implementación completa?", answer: "Depende de la complejidad. Un diagnóstico Blue Diamond toma entre 10 a 15 días hábiles. Una implementación Red Diamond típica oscila entre 4 a 12 semanas. No hacemos proyectos eternos; trabajamos por sprints de entrega de valor para que veas resultados funcionales lo antes posible." },
+        { question: "¿La automatización reemplazará a mi personal?", answer: "El objetivo de Authomia no es despedir humanos, sino eliminar el trabajo robótico que hacen los humanos. Buscamos que tu equipo deje de copiar y pegar datos en Excel y empiece a tomar decisiones estratégicas, atender mejor a los clientes y generar más valor. Automatizamos tareas, potenciamos personas." },
+        { question: "¿Qué pasa si mis sistemas actuales son muy antiguos?", answer: "Es nuestro escenario favorito. Somos expertos en integración. Podemos conectar sistemas 'legacy' antiguos con IAs modernas mediante capas intermedias (middleware) o, si es necesario, diseñar un plan de migración seguro. No te obligaremos a cambiar todo tu software si no es estrictamente necesario para la rentabilidad." },
+        { question: "¿Ofrecen garantía sobre los resultados?", answer: "En tecnología, garantizar resultados financieros exactos es irresponsable. Lo que garantizamos es la funcionalidad técnica: el sistema hará exactamente lo que se diseñó que hiciera. Además, trabajamos con una política de 'Cero Deuda Técnica': entregamos código limpio, documentado y propiedad tuya, no cajas negras." },
+        { question: "¿Cómo se maneja la confidencialidad de mis datos?", answer: "Con rigor militar. Firmamos Acuerdos de Confidencialidad (NDA) antes de recibir cualquier acceso. Tus datos se utilizan únicamente para el entrenamiento de tus propios modelos y la configuración de tus sistemas. No compartimos ni vendemos datos a terceros. La seguridad es un pilar no negociable de nuestra arquitectura." }
       ]
     }
   },

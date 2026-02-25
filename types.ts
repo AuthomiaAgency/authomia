@@ -127,6 +127,18 @@ export interface Content {
     };
     hook: string;
   };
+  detailedServices?: {
+    blue: {
+      title: string;
+      description: string;
+      items: { title: string; desc: string }[];
+    };
+    red: {
+      title: string;
+      description: string;
+      items: { title: string; desc: string; icon: string }[];
+    };
+  };
   protocols: {
     title: string;
     description: string;

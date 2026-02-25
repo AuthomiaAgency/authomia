@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Content } from '../types';
 import { Diamond, ArrowDown, Eye } from 'lucide-react';
@@ -39,7 +39,7 @@ const Services: React.FC<ServicesProps> = ({ content, onSelect }) => {
             <ul className="space-y-6 mb-12 flex-grow translate-z-10">
               {content.blue.features.map((feat, i) => (
                 <li key={i} className="flex items-start gap-4 text-white/80 font-light">
-                  <div className="w-1.5 h-1.5 mt-2 bg-authomia-blueLight rounded-full" />
+                  <div className="w-1.5 h-1.5 mt-2 bg-authomia-blueLight rounded-full shrink-0" />
                   {feat}
                 </li>
               ))}
@@ -94,7 +94,7 @@ const Services: React.FC<ServicesProps> = ({ content, onSelect }) => {
             <ul className="space-y-6 mb-12 flex-grow translate-z-10">
               {content.red.features.map((feat, i) => (
                 <li key={i} className="flex items-start gap-4 text-white/80 font-light">
-                  <div className="w-1.5 h-1.5 mt-2 bg-authomia-redLight rounded-full" />
+                  <div className="w-1.5 h-1.5 mt-2 bg-authomia-redLight rounded-full shrink-0" />
                   {feat}
                 </li>
               ))}

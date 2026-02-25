@@ -174,7 +174,7 @@ const Publications: React.FC = () => {
     <nav className="fixed top-0 left-0 w-full z-50 bg-[#020202]/80 backdrop-blur-xl border-b border-white/5">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <a href="/" className="flex items-center gap-3 group">
-          <img src={logoUrl} className="w-8 h-8 invert opacity-90 group-hover:opacity-100 transition-opacity" alt="Authomia" />
+          <img src={logoUrl} className="w-8 h-8 opacity-90 group-hover:opacity-100 transition-opacity" alt="Authomia" />
           <span className="font-mono text-sm tracking-widest font-bold hidden sm:block">AUTHOMIA</span>
         </a>
         <div className="hidden md:flex items-center gap-8">
@@ -185,11 +185,11 @@ const Publications: React.FC = () => {
               Servicios <ChevronDown size={12} />
             </button>
             <div className="absolute top-full left-0 w-64 bg-[#08090B] border border-white/10 rounded-sm opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 shadow-2xl transform translate-y-2 group-hover/nav:translate-y-0">
-               <a href="/#services" className="block p-4 hover:bg-white/5 border-b border-white/5 transition-colors">
+               <a href="/servicios" className="block p-4 hover:bg-white/5 border-b border-white/5 transition-colors">
                  <span className="block text-authomia-blueLight font-mono text-[10px] mb-1">BLUE DIAMOND</span>
                  <span className="text-sm">Automatización de Flujos</span>
                </a>
-               <a href="/#services" className="block p-4 hover:bg-white/5 transition-colors">
+               <a href="/servicios" className="block p-4 hover:bg-white/5 transition-colors">
                  <span className="block text-authomia-redLight font-mono text-[10px] mb-1">RED DIAMOND</span>
                  <span className="text-sm">Sistemas de Inteligencia Core</span>
                </a>
@@ -201,8 +201,8 @@ const Publications: React.FC = () => {
               Authomia Agency <ChevronDown size={12} />
             </button>
             <div className="absolute top-full left-0 w-48 bg-[#08090B] border border-white/10 rounded-sm opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 shadow-2xl transform translate-y-2 group-hover/nav:translate-y-0">
-               <a href="/#contact" className="block p-4 hover:bg-white/5 text-sm transition-colors border-b border-white/5">Contacto</a>
-               <a href="/#about" className="block p-4 hover:bg-white/5 text-sm transition-colors">Quiénes Somos</a>
+               <a href="/contacto" className="block p-4 hover:bg-white/5 text-sm transition-colors border-b border-white/5">Contacto</a>
+               <a href="/sobre-nosotros" className="block p-4 hover:bg-white/5 text-sm transition-colors">Quiénes Somos</a>
             </div>
           </div>
 

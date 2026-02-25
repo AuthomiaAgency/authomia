@@ -16,10 +16,10 @@ const Navbar: React.FC<NavbarProps> = ({ lang, setLang }) => {
       transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
       className="fixed top-0 left-0 w-full z-50 px-6 py-6 flex justify-between items-center pointer-events-none"
     >
-      <div className="pointer-events-auto cursor-pointer group flex items-center gap-3">
+      <a href="/" className="pointer-events-auto cursor-pointer group flex items-center gap-3">
         <img src={LOGO_ICON_URL} alt="Authomia" className="w-8 h-8 opacity-90 group-hover:opacity-100 transition-opacity" />
         <span className="font-mono text-sm tracking-[0.2em] text-white/50 group-hover:text-white transition-colors">AUTHOMIA</span>
-      </div>
+      </a>
 
       <div className="pointer-events-auto flex items-center gap-6 glass-panel px-6 py-2 rounded-full">
         <button 

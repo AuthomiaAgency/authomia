@@ -16,9 +16,11 @@ import Manager from './components/Manager';
 import Publications from './components/Publications';
 import Survey from './components/Survey';
 import Mifo from './components/Mifo';
-import QuestionnairePage from './components/QuestionnairePage'; // NEW PAGE COMPONENT
-import ProtocolsOverlay from './components/ProtocolsOverlay';
-import WhoWeAreOverlay from './components/WhoWeAreOverlay';
+import QuestionnairePage from './components/QuestionnairePage';
+import ServicesPage from './components/ServicesPage';
+import ProtocolsPage from './components/ProtocolsPage'; // NEW
+import WhoWeArePage from './components/WhoWeArePage'; // NEW
+import ContactPage from './components/ContactPage'; // NEW
 import { CONTENT, LOGO_ICON_URL } from './constants';
 import { Language, LegalDocument } from './types';
 import { Shield, Lock, Eye, ArrowRight, Diamond, Linkedin, Facebook, Instagram, ChevronDown, X, MapPin, Mail, Phone } from 'lucide-react';
@@ -27,31 +29,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 const App: React.FC = () => {
   // ROUTING LOGIC
   const path = window.location.pathname;
+  const [lang, setLang] = useState<Language>('es');
+  const t = CONTENT[lang];
+
   if (path === '/manager') return <Manager />;
   if (path.startsWith('/publicaciones')) return <Publications />;
   if (path === '/encuesta') return <Survey />;
   if (path === '/material') return <Mifo />;
-  if (path === '/cuestionario') return <QuestionnairePage />; // Independent Page
+  if (path === '/cuestionario') return <QuestionnairePage />;
+  if (path === '/servicios') return <ServicesPage content={t} />;
+  if (path === '/protocolos') return <ProtocolsPage content={t} />; // NEW ROUTE
+  if (path === '/sobre-nosotros') return <WhoWeArePage content={t} />; // NEW ROUTE
+  if (path === '/contacto') return <ContactPage content={t.contact} />; // NEW ROUTE
 
-  const [lang, setLang] = useState<Language>('es');
   const [activeLegalDoc, setActiveLegalDoc] = useState<LegalDocument | null>(null);
   
   // Logic for Final CTA Display (Single or Dual)
   const [targetPlan, setTargetPlan] = useState<'blue' | 'red' | null>(null);
 
-  // New Overlay States
-  const [showFaq, setShowFaq] = useState(false);
-  const [showProtocols, setShowProtocols] = useState(false);
-  const [showWhoWeAre, setShowWhoWeAre] = useState(false);
-  const [showContact, setShowContact] = useState(false);
-  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [showToast, setShowToast] = useState(false);
-
-  const t = CONTENT[lang];
 
   useEffect(() => {
     document.documentElement.classList.add('scroll-smooth');
-  }, []);
+  }, [path]);
 
   // Updated Scroll Logic: Sets target plan and scrolls to footer
   const handleServiceSelect = (plan: 'blue' | 'red') => {
@@ -68,13 +68,22 @@ const App: React.FC = () => {
   };
 
   const handleNavClick = (item: string) => {
-    if (item === 'FAQ') setShowFaq(true);
-    if (item.includes('Protocolos') || item.includes('Protocols')) setShowProtocols(true);
-    if (item.includes('Quiénes') || item.includes('Who')) setShowWhoWeAre(true);
+    if (item.includes('FAQ') || item.includes('Servicios')) {
+       window.location.href = '/servicios';
+       return;
+    }
+    if (item.includes('Protocolos') || item.includes('Protocols')) {
+       window.location.href = '/protocolos';
+       return;
+    }
+    if (item.includes('Quiénes') || item.includes('Who')) {
+       window.location.href = '/sobre-nosotros';
+       return;
+    }
   };
 
   const handleContactClick = () => {
-    setShowContact(true);
+    window.location.href = '/contacto';
   };
 
   const handleLinkedInClick = (e: React.MouseEvent) => {
@@ -283,170 +292,6 @@ const App: React.FC = () => {
           )}
         </AnimatePresence>
       </footer>
-
-      {/* OVERLAYS (FAQ, Protocols, Contact, Legal, WhoWeAre) - Same as before */}
-      <AnimatePresence>
-        {showFaq && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 md:p-8"
-            onClick={() => setShowFaq(false)}
-          >
-             <motion.div 
-               initial={{ y: 50, opacity: 0 }}
-               animate={{ y: 0, opacity: 1 }}
-               exit={{ y: 50, opacity: 0 }}
-               className="w-full max-w-4xl bg-[#0A0A0A]/95 border border-white/10 rounded-lg shadow-2xl overflow-hidden"
-               onClick={(e) => e.stopPropagation()}
-             >
-                <div className="p-8 border-b border-white/10 flex justify-between items-center">
-                   <h2 className="text-2xl font-light text-white">{t.faq.title}</h2>
-                   <button onClick={() => setShowFaq(false)} className="p-2 bg-white/5 rounded-full hover:bg-white/20 transition-colors"><X className="w-5 h-5" /></button>
-                </div>
-                <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                   <div className="space-y-2">
-                     {t.faq.items.map((item, i) => (
-                        <div key={i} className="border border-white/5 bg-white/[0.02] rounded-sm overflow-hidden">
-                           <button 
-                             onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
-                             className="w-full flex justify-between items-center p-6 text-left hover:bg-white/5 transition-colors group"
-                           >
-                              <span className="text-sm font-medium text-white/90 pr-4 group-hover:text-authomia-blueLight transition-colors">{item.question}</span>
-                              <ChevronDown className={`w-4 h-4 text-white/40 transition-transform duration-300 ${expandedFaq === i ? 'rotate-180 text-authomia-blueLight' : ''}`} />
-                           </button>
-                           <AnimatePresence>
-                             {expandedFaq === i && (
-                               <motion.div 
-                                 initial={{ height: 0, opacity: 0 }}
-                                 animate={{ height: "auto", opacity: 1 }}
-                                 exit={{ height: 0, opacity: 0 }}
-                                 className="overflow-hidden"
-                               >
-                                  <div className="p-6 pt-0 text-sm text-white/60 font-light leading-relaxed border-t border-white/5">
-                                     {item.answer}
-                                  </div>
-                               </motion.div>
-                             )}
-                           </AnimatePresence>
-                        </div>
-                     ))}
-                   </div>
-                </div>
-             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showProtocols && (
-          <ProtocolsOverlay content={t.protocols} onClose={() => setShowProtocols(false)} />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-         {showWhoWeAre && (
-            <WhoWeAreOverlay content={t.whoWeAre} onClose={() => setShowWhoWeAre(false)} />
-         )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-         {showContact && (
-            <motion.div 
-               initial={{ opacity: 0 }}
-               animate={{ opacity: 1 }}
-               exit={{ opacity: 0 }}
-               className="fixed inset-0 z-[100] bg-[#020202] flex flex-col md:flex-row"
-            >
-               <button onClick={() => setShowContact(false)} className="absolute top-8 right-8 p-3 text-white z-50 bg-black/50 rounded-full hover:bg-white/20">
-                  <X className="w-6 h-6" />
-               </button>
-
-               {/* Left: Info */}
-               <div className="w-full md:w-1/3 p-12 flex flex-col justify-center relative z-20 bg-[#050505] border-r border-white/5">
-                  <motion.div 
-                     initial={{ y: 20, opacity: 0 }}
-                     animate={{ y: 0, opacity: 1 }}
-                     transition={{ delay: 0.3 }}
-                  >
-                     <img src={LOGO_ICON_URL} alt="Authomia" className="w-12 h-12 invert mb-8 opacity-80" />
-                     <h2 className="text-4xl font-light text-white mb-12">{t.contact.title}</h2>
-
-                     <div className="space-y-10">
-                        <a href={`mailto:${t.contact.email}`} className="flex items-center gap-6 group">
-                           <div className="w-12 h-12 border border-white/10 rounded-full flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                              <Mail className="w-5 h-5 text-authomia-blueLight" />
-                           </div>
-                           <div>
-                              <span className="text-xs font-mono text-white/40 block mb-1">EMAIL</span>
-                              <span className="text-lg text-white font-light group-hover:text-authomia-blueLight transition-colors">{t.contact.email}</span>
-                           </div>
-                        </a>
-                        <div className="flex items-center gap-6 group cursor-default">
-                           <div className="w-12 h-12 border border-white/10 rounded-full flex items-center justify-center transition-colors">
-                              <Phone className="w-5 h-5 text-white" />
-                           </div>
-                           <div>
-                              <span className="text-xs font-mono text-white/40 block mb-1">PHONE</span>
-                              <span className="text-lg text-white font-light select-all">{t.contact.phone}</span>
-                           </div>
-                        </div>
-                        <div className="flex items-center gap-6">
-                           <div className="w-12 h-12 border border-white/10 rounded-full flex items-center justify-center">
-                              <MapPin className="w-5 h-5 text-authomia-redLight" />
-                           </div>
-                           <div>
-                              <span className="text-xs font-mono text-white/40 block mb-1">{t.contact.locationLabel}</span>
-                              <span className="text-lg text-white font-light">{t.contact.location}</span>
-                           </div>
-                        </div>
-                     </div>
-                  </motion.div>
-               </div>
-
-               {/* Right: IMAGE MAP */}
-               <div className="w-full md:w-2/3 relative bg-[#020202] overflow-hidden flex items-center justify-center">
-                  <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
-                     <img 
-                        src="https://i.imgur.com/8INA5kg.png" 
-                        alt="Peru Map" 
-                        className="w-full max-h-[70vh] object-contain opacity-80 drop-shadow-[0_0_50px_rgba(255,255,255,0.1)] animate-float"
-                        style={{ filter: "invert(1) grayscale(100%) brightness(150%)" }} 
-                     />
-                     <div className="absolute animate-float" style={{ top: '52%', left: '48%' }}>
-                        <div className="relative flex flex-col items-center group cursor-pointer perspective-1000">
-                           <motion.div 
-                             initial={{ y: -50, opacity: 0 }}
-                             animate={{ y: 0, opacity: 1 }}
-                             transition={{ delay: 0.5, type: 'spring', stiffness: 200 }}
-                             whileHover={{ y: -10 }}
-                             className="relative z-20 preserve-3d"
-                           >
-                              <div className="w-8 h-8 bg-authomia-red rounded-full flex items-center justify-center shadow-[0_0_20px_#B30A0A] border-2 border-white relative z-10">
-                                 <div className="w-2 h-2 bg-white rounded-full" />
-                              </div>
-                              <div className="w-1 h-6 bg-white mx-auto -mt-1 shadow-lg" />
-                              <div className="w-4 h-1 bg-black/50 blur-sm mx-auto rounded-full" />
-                           </motion.div>
-                           <motion.div 
-                             initial={{ opacity: 0, scale: 0.8 }}
-                             animate={{ opacity: 1, scale: 1 }}
-                             transition={{ delay: 0.8 }}
-                             className="absolute -top-12 left-1/2 -translate-x-1/2 bg-[#050505] border border-white/20 px-4 py-2 rounded-sm whitespace-nowrap shadow-xl"
-                           >
-                              <span className="text-xs font-mono font-bold text-white block">JAUJA, JUNÍN</span>
-                              <span className="text-[9px] text-white/50 block tracking-widest">HQ CENTER</span>
-                           </motion.div>
-                           <div className="absolute top-[28px] left-1/2 -translate-x-1/2 w-32 h-32 border border-authomia-red/50 rounded-full animate-ping opacity-20 pointer-events-none" />
-                           <div className="absolute top-[28px] left-1/2 -translate-x-1/2 w-64 h-64 border border-authomia-red/30 rounded-full animate-pulse opacity-10 pointer-events-none" />
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </motion.div>
-         )}
-      </AnimatePresence>
 
       <Modal isOpen={!!activeLegalDoc} onClose={() => setActiveLegalDoc(null)} title={activeLegalDoc?.title || ''}>
          <div className="space-y-8">
