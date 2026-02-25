@@ -28,12 +28,22 @@ interface PublicationBlock {
   icon?: string;
 }
 
+interface PublicationGroup {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  coverImage: string;
+}
+
 interface Publication {
   id: string;
   title: string;
   slug?: string;
   seoTitle?: string;
   seoDescription?: string;
+  groupId?: string;
+  coverPosition?: string;
   date: string;
   coverImage: string;
   excerpt: string;
@@ -85,14 +95,17 @@ const Manager: React.FC = () => {
   // DATA STATES
   const [partners, setPartners] = useState<Partner[]>([]);
   const [publications, setPublications] = useState<Publication[]>([]);
+  const [publicationGroups, setPublicationGroups] = useState<PublicationGroup[]>([]);
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
 
   // EDITING STATES
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [editingPub, setEditingPub] = useState<Publication | null>(null);
+  const [editingGroup, setEditingGroup] = useState<PublicationGroup | null>(null);
   const [editingSurvey, setEditingSurvey] = useState<Survey | null>(null);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
+  const [pubTab, setPubTab] = useState<'posts' | 'groups'>('posts');
 
   // LOAD DATA
   useEffect(() => {
@@ -111,6 +124,9 @@ const Manager: React.FC = () => {
 
         const pubDoc = await getDoc(doc(db, 'appData', 'publications'));
         if (pubDoc.exists()) setPublications(pubDoc.data().items || []);
+
+        const pubGroupDoc = await getDoc(doc(db, 'appData', 'publicationGroups'));
+        if (pubGroupDoc.exists()) setPublicationGroups(pubGroupDoc.data().items || []);
 
         const sDoc = await getDoc(doc(db, 'appData', 'surveys'));
         if (sDoc.exists()) setSurveys(sDoc.data().items || []);
@@ -137,6 +153,11 @@ const Manager: React.FC = () => {
     setPublications(data);
     await setDoc(doc(db, 'appData', 'publications'), { items: data });
   };
+  const savePubGroupsToStorage = async (data: PublicationGroup[]) => {
+    if (!auth.currentUser) return;
+    setPublicationGroups(data);
+    await setDoc(doc(db, 'appData', 'publicationGroups'), { items: data });
+  };
   const saveSurveysToStorage = async (data: Survey[]) => {
     if (!auth.currentUser) return;
     setSurveys(data);
@@ -156,6 +177,86 @@ const Manager: React.FC = () => {
         callback(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSmartPaste = async () => {
+    try {
+      const clipboardItems = await navigator.clipboard.read();
+      let htmlContent = '';
+      let textContent = '';
+      
+      for (const item of clipboardItems) {
+        if (item.types.includes('text/html')) {
+          const blob = await item.getType('text/html');
+          htmlContent = await blob.text();
+        }
+        if (item.types.includes('text/plain')) {
+          const blob = await item.getType('text/plain');
+          textContent = await blob.text();
+        }
+      }
+
+      const newBlocks: PublicationBlock[] = [];
+
+      if (htmlContent) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, 'text/html');
+        const elements = Array.from(doc.body.children);
+        
+        for (const el of elements) {
+          const text = el.textContent?.trim();
+          if (!text && el.tagName !== 'HR') continue;
+          
+          if (el.tagName === 'H1') newBlocks.push({ type: 'heading', content: text || '' });
+          else if (el.tagName === 'H2') newBlocks.push({ type: 'h2', content: text || '' });
+          else if (el.tagName === 'H3') newBlocks.push({ type: 'h3', content: text || '' });
+          else if (el.tagName === 'H4' || el.tagName === 'H5' || el.tagName === 'H6') newBlocks.push({ type: 'h4', content: text || '' });
+          else if (el.tagName === 'BLOCKQUOTE') newBlocks.push({ type: 'quote', content: text || '' });
+          else if (el.tagName === 'HR') newBlocks.push({ type: 'divider', content: '' });
+          else newBlocks.push({ type: 'text', content: text || '' });
+        }
+      } else if (textContent) {
+        const lines = textContent.split('\n');
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          if (trimmed.startsWith('# ')) newBlocks.push({ type: 'heading', content: trimmed.replace('# ', '') });
+          else if (trimmed.startsWith('## ')) newBlocks.push({ type: 'h2', content: trimmed.replace('## ', '') });
+          else if (trimmed.startsWith('### ')) newBlocks.push({ type: 'h3', content: trimmed.replace('### ', '') });
+          else if (trimmed.startsWith('#### ')) newBlocks.push({ type: 'h4', content: trimmed.replace('#### ', '') });
+          else newBlocks.push({ type: 'text', content: trimmed });
+        }
+      }
+
+      if (newBlocks.length > 0 && editingPub) {
+        setEditingPub({ ...editingPub, blocks: [...editingPub.blocks, ...newBlocks] });
+      } else if (newBlocks.length === 0) {
+        alert('No se encontró contenido válido en el portapapeles.');
+      }
+    } catch (err) {
+      console.error('Failed to read clipboard contents: ', err);
+      // Fallback to readText if read() is not supported or permission denied
+      try {
+        const text = await navigator.clipboard.readText();
+        if (!text) return;
+        const lines = text.split('\n');
+        const newBlocks: PublicationBlock[] = [];
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          if (trimmed.startsWith('# ')) newBlocks.push({ type: 'heading', content: trimmed.replace('# ', '') });
+          else if (trimmed.startsWith('## ')) newBlocks.push({ type: 'h2', content: trimmed.replace('## ', '') });
+          else if (trimmed.startsWith('### ')) newBlocks.push({ type: 'h3', content: trimmed.replace('### ', '') });
+          else if (trimmed.startsWith('#### ')) newBlocks.push({ type: 'h4', content: trimmed.replace('#### ', '') });
+          else newBlocks.push({ type: 'text', content: trimmed });
+        }
+        if (editingPub) {
+          setEditingPub({ ...editingPub, blocks: [...editingPub.blocks, ...newBlocks] });
+        }
+      } catch (fallbackErr) {
+        alert('No se pudo leer el portapapeles. Asegúrate de dar permisos.');
+      }
     }
   };
 
@@ -374,56 +475,83 @@ const Manager: React.FC = () => {
 
         {/* --- PUBLICATIONS TAB --- */}
         {activeTab === 'publications' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-             <div className="space-y-4">
-                <button 
-                  onClick={() => setEditingPub({ id: Date.now().toString(), title: 'New Article', date: new Date().toISOString().split('T')[0], coverImage: '', excerpt: '', blocks: [] })}
-                  className="w-full py-4 border border-dashed border-white/20 text-white/50 hover:text-white hover:border-white/50 flex items-center justify-center gap-2 font-mono text-xs uppercase"
-                >
-                  <Plus className="w-4 h-4" /> New Post
-                </button>
-                {publications.map(p => (
-                   <div key={p.id} onClick={() => setEditingPub(p)} className="p-4 border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] cursor-pointer flex justify-between items-center group">
-                      <div><h3 className="font-bold text-sm truncate w-32">{p.title}</h3><p className="text-xs text-white/50">{p.date}</p></div>
-                      <button onClick={(e) => { e.stopPropagation(); savePubsToStorage(publications.filter(x => x.id !== p.id)); if(editingPub?.id === p.id) setEditingPub(null); }} className="text-white/20 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                   </div>
-                ))}
-             </div>
-              <div className="col-span-2 bg-[#08090B] border border-white/10 p-8 rounded-sm h-[80vh] overflow-y-auto">
-                {editingPub ? (
-                   <div className="space-y-6">
-                      <div className="flex justify-between"><h2 className="text-authomia-blueLight font-mono">Editing Post</h2><span className="text-xs text-white/30">{editingPub.id}</span></div>
-                      <input className="w-full bg-white/5 border border-white/10 p-2 text-white font-bold text-lg" placeholder="Title" value={editingPub.title} onChange={e => setEditingPub({...editingPub, title: e.target.value})} />
-                      
-                      {/* SEO Fields */}
-                      <div className="space-y-2 p-4 border border-white/5 bg-white/[0.01]">
-                        <h3 className="text-xs font-mono text-white/50 uppercase tracking-widest mb-2">SEO Settings</h3>
-                        <input className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm outline-none focus:border-authomia-blueLight transition-colors" placeholder="URL Slug (e.g., mi-articulo-seo)" value={editingPub.slug || ''} onChange={e => setEditingPub({...editingPub, slug: e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')})} />
-                        <input className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm outline-none focus:border-authomia-blueLight transition-colors" placeholder="SEO Title (Meta Title)" value={editingPub.seoTitle || ''} onChange={e => setEditingPub({...editingPub, seoTitle: e.target.value})} />
-                        <textarea className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm outline-none focus:border-authomia-blueLight transition-colors h-16 resize-none" placeholder="SEO Description (Meta Description)" value={editingPub.seoDescription || ''} onChange={e => setEditingPub({...editingPub, seoDescription: e.target.value})} />
-                      </div>
+          <div className="space-y-6">
+            <div className="flex gap-4 border-b border-white/10 pb-4">
+              <button onClick={() => setPubTab('posts')} className={`text-xs font-mono uppercase tracking-widest px-4 py-2 rounded-sm transition-colors ${pubTab === 'posts' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}>Posts</button>
+              <button onClick={() => setPubTab('groups')} className={`text-xs font-mono uppercase tracking-widest px-4 py-2 rounded-sm transition-colors ${pubTab === 'groups' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}>Groups</button>
+            </div>
+            
+            {pubTab === 'posts' ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="space-y-4">
+                  <button 
+                    onClick={() => setEditingPub({ id: Date.now().toString(), title: 'New Article', date: new Date().toISOString().split('T')[0], coverImage: '', excerpt: '', blocks: [] })}
+                    className="w-full py-4 border border-dashed border-white/20 text-white/50 hover:text-white hover:border-white/50 flex items-center justify-center gap-2 font-mono text-xs uppercase"
+                  >
+                    <Plus className="w-4 h-4" /> New Post
+                  </button>
+                  {publications.map(p => (
+                     <div key={p.id} onClick={() => setEditingPub(p)} className="p-4 border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] cursor-pointer flex justify-between items-center group">
+                        <div><h3 className="font-bold text-sm truncate w-32">{p.title}</h3><p className="text-xs text-white/50">{p.date}</p></div>
+                        <button onClick={(e) => { e.stopPropagation(); savePubsToStorage(publications.filter(x => x.id !== p.id)); if(editingPub?.id === p.id) setEditingPub(null); }} className="text-white/20 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                     </div>
+                  ))}
+                </div>
+                <div className="col-span-2 bg-[#08090B] border border-white/10 p-8 rounded-sm h-[80vh] overflow-y-auto">
+                  {editingPub ? (
+                     <div className="space-y-6">
+                        <div className="flex justify-between"><h2 className="text-authomia-blueLight font-mono">Editing Post</h2><span className="text-xs text-white/30">{editingPub.id}</span></div>
+                        <input className="w-full bg-white/5 border border-white/10 p-2 text-white font-bold text-lg" placeholder="Title" value={editingPub.title} onChange={e => setEditingPub({...editingPub, title: e.target.value})} />
+                        
+                        {/* SEO Fields */}
+                        <div className="space-y-2 p-4 border border-white/5 bg-white/[0.01]">
+                          <h3 className="text-xs font-mono text-white/50 uppercase tracking-widest mb-2">SEO Settings</h3>
+                          <input className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm outline-none focus:border-authomia-blueLight transition-colors" placeholder="URL Slug (e.g., mi-articulo-seo)" value={editingPub.slug || ''} onChange={e => setEditingPub({...editingPub, slug: e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')})} />
+                          <input className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm outline-none focus:border-authomia-blueLight transition-colors" placeholder="SEO Title (Meta Title)" value={editingPub.seoTitle || ''} onChange={e => setEditingPub({...editingPub, seoTitle: e.target.value})} />
+                          <textarea className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm outline-none focus:border-authomia-blueLight transition-colors h-16 resize-none" placeholder="SEO Description (Meta Description)" value={editingPub.seoDescription || ''} onChange={e => setEditingPub({...editingPub, seoDescription: e.target.value})} />
+                        </div>
 
-                      <input className="w-full bg-white/5 border border-white/10 p-2 text-white" type="date" value={editingPub.date} onChange={e => setEditingPub({...editingPub, date: e.target.value})} />
-                      
-                      <div className="space-y-2">
-                         <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Cover Image</label>
-                         <div className="flex gap-2 items-center">
-                            <input className="flex-1 bg-white/5 border border-white/10 p-2 text-white text-xs" placeholder="Cover Image URL or Upload" value={editingPub.coverImage} onChange={e => setEditingPub({...editingPub, coverImage: e.target.value})} />
-                            <label className="cursor-pointer bg-white/10 hover:bg-white/20 p-2 border border-white/10 flex items-center justify-center transition-colors">
-                               <ImageIcon size={16} className="text-white/70" />
-                               <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (base64) => setEditingPub({...editingPub, coverImage: base64}))} />
-                            </label>
-                         </div>
-                         {editingPub.coverImage && (
-                            <img src={editingPub.coverImage} alt="Preview" className="w-full h-32 object-cover border border-white/10 rounded-sm mt-2" />
-                         )}
-                      </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <input className="w-full bg-white/5 border border-white/10 p-2 text-white" type="date" value={editingPub.date} onChange={e => setEditingPub({...editingPub, date: e.target.value})} />
+                          <select className="w-full bg-white/5 border border-white/10 p-2 text-white outline-none" value={editingPub.groupId || ''} onChange={e => setEditingPub({...editingPub, groupId: e.target.value})}>
+                            <option value="">No Group</option>
+                            {publicationGroups.map(g => <option key={g.id} value={g.id}>{g.title}</option>)}
+                          </select>
+                        </div>
+                        
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Cover Image</label>
+                           <div className="flex gap-2 items-center">
+                              <input className="flex-1 bg-white/5 border border-white/10 p-2 text-white text-xs" placeholder="Cover Image URL or Upload" value={editingPub.coverImage} onChange={e => setEditingPub({...editingPub, coverImage: e.target.value})} />
+                              <label className="cursor-pointer bg-white/10 hover:bg-white/20 p-2 border border-white/10 flex items-center justify-center transition-colors">
+                                 <ImageIcon size={16} className="text-white/70" />
+                                 <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (base64) => setEditingPub({...editingPub, coverImage: base64}))} />
+                              </label>
+                           </div>
+                           <div className="flex gap-4 mt-2">
+                             <label className="text-xs text-white/50 flex items-center gap-2">
+                               <input type="radio" name="coverPos" checked={editingPub.coverPosition === 'top'} onChange={() => setEditingPub({...editingPub, coverPosition: 'top'})} /> Top
+                             </label>
+                             <label className="text-xs text-white/50 flex items-center gap-2">
+                               <input type="radio" name="coverPos" checked={!editingPub.coverPosition || editingPub.coverPosition === 'center'} onChange={() => setEditingPub({...editingPub, coverPosition: 'center'})} /> Center
+                             </label>
+                             <label className="text-xs text-white/50 flex items-center gap-2">
+                               <input type="radio" name="coverPos" checked={editingPub.coverPosition === 'bottom'} onChange={() => setEditingPub({...editingPub, coverPosition: 'bottom'})} /> Bottom
+                             </label>
+                           </div>
+                           {editingPub.coverImage && (
+                              <img src={editingPub.coverImage} alt="Preview" className="w-full h-32 object-cover border border-white/10 rounded-sm mt-2" style={{ objectPosition: editingPub.coverPosition || 'center' }} />
+                           )}
+                        </div>
 
-                      <textarea className="w-full bg-white/5 border border-white/10 p-2 text-white h-20" placeholder="Short Excerpt" value={editingPub.excerpt} onChange={e => setEditingPub({...editingPub, excerpt: e.target.value})} />
-                      
-                      <div className="border-t border-white/10 pt-4">
-                         <h3 className="text-xs font-mono text-white/50 mb-4">CONTENT BLOCKS</h3>
-                         <div className="space-y-4 mb-4">
+                        <textarea className="w-full bg-white/5 border border-white/10 p-2 text-white h-20" placeholder="Short Excerpt" value={editingPub.excerpt} onChange={e => setEditingPub({...editingPub, excerpt: e.target.value})} />
+                        
+                        <div className="border-t border-white/10 pt-4">
+                           <div className="flex justify-between items-center mb-4">
+                             <h3 className="text-xs font-mono text-white/50">CONTENT BLOCKS</h3>
+                             <button onClick={handleSmartPaste} className="text-[10px] font-mono uppercase tracking-widest bg-authomia-blueLight/20 text-authomia-blueLight px-3 py-1 rounded-sm hover:bg-authomia-blueLight/40 transition-colors">Smart Paste</button>
+                           </div>
+                           <div className="space-y-4 mb-4">
                             {editingPub.blocks.map((block, idx) => (
                                <div key={idx} className="p-4 border border-white/5 bg-white/[0.02] relative group">
                                   <button onClick={() => { const newBlocks = [...editingPub.blocks]; newBlocks.splice(idx, 1); setEditingPub({...editingPub, blocks: newBlocks}); }} className="absolute top-2 right-2 text-white/20 hover:text-red-500"><X className="w-4 h-4" /></button>
@@ -487,6 +615,55 @@ const Manager: React.FC = () => {
                    </div>
                 ) : <div className="h-full flex items-center justify-center opacity-30 text-sm font-mono">Select or Create Publication</div>}
              </div>
+            </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="space-y-4">
+                  <button 
+                    onClick={() => setEditingGroup({ id: Date.now().toString(), title: 'New Group', slug: '', description: '', coverImage: '' })}
+                    className="w-full py-4 border border-dashed border-white/20 text-white/50 hover:text-white hover:border-white/50 flex items-center justify-center gap-2 font-mono text-xs uppercase"
+                  >
+                    <Plus className="w-4 h-4" /> New Group
+                  </button>
+                  {publicationGroups.map(g => (
+                     <div key={g.id} onClick={() => setEditingGroup(g)} className="p-4 border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] cursor-pointer flex justify-between items-center group">
+                        <div><h3 className="font-bold text-sm truncate w-32">{g.title}</h3></div>
+                        <button onClick={(e) => { e.stopPropagation(); savePubGroupsToStorage(publicationGroups.filter(x => x.id !== g.id)); if(editingGroup?.id === g.id) setEditingGroup(null); }} className="text-white/20 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                     </div>
+                  ))}
+                </div>
+                <div className="col-span-2 bg-[#08090B] border border-white/10 p-8 rounded-sm h-[80vh] overflow-y-auto">
+                  {editingGroup ? (
+                     <div className="space-y-6">
+                        <div className="flex justify-between"><h2 className="text-authomia-blueLight font-mono">Editing Group</h2><span className="text-xs text-white/30">{editingGroup.id}</span></div>
+                        <input className="w-full bg-white/5 border border-white/10 p-2 text-white font-bold text-lg" placeholder="Title" value={editingGroup.title} onChange={e => setEditingGroup({...editingGroup, title: e.target.value})} />
+                        <input className="w-full bg-transparent border-b border-white/10 p-2 text-white text-sm outline-none focus:border-authomia-blueLight transition-colors" placeholder="URL Slug (e.g., mi-grupo)" value={editingGroup.slug} onChange={e => setEditingGroup({...editingGroup, slug: e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')})} />
+                        <textarea className="w-full bg-white/5 border border-white/10 p-2 text-white h-20" placeholder="Description" value={editingGroup.description} onChange={e => setEditingGroup({...editingGroup, description: e.target.value})} />
+                        
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-mono text-white/50 uppercase tracking-widest">Cover Image</label>
+                           <div className="flex gap-2 items-center">
+                              <input className="flex-1 bg-white/5 border border-white/10 p-2 text-white text-xs" placeholder="Cover Image URL or Upload" value={editingGroup.coverImage} onChange={e => setEditingGroup({...editingGroup, coverImage: e.target.value})} />
+                              <label className="cursor-pointer bg-white/10 hover:bg-white/20 p-2 border border-white/10 flex items-center justify-center transition-colors">
+                                 <ImageIcon size={16} className="text-white/70" />
+                                 <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (base64) => setEditingGroup({...editingGroup, coverImage: base64}))} />
+                              </label>
+                           </div>
+                           {editingGroup.coverImage && (
+                              <img src={editingGroup.coverImage} alt="Preview" className="w-full h-32 object-cover border border-white/10 rounded-sm mt-2" />
+                           )}
+                        </div>
+
+                        <button onClick={() => { 
+                           const exists = publicationGroups.find(g => g.id === editingGroup.id);
+                           const newGroups = exists ? publicationGroups.map(g => g.id === editingGroup.id ? editingGroup : g) : [...publicationGroups, editingGroup];
+                           savePubGroupsToStorage(newGroups); setEditingGroup(null);
+                        }} className="w-full bg-authomia-blue py-3 text-sm font-mono tracking-widest hover:bg-authomia-blueLight sticky bottom-0 mt-8">SAVE GROUP</button>
+                     </div>
+                  ) : <div className="h-full flex items-center justify-center opacity-30 text-sm font-mono">Select or Create Group</div>}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Calendar, ArrowRight, Lock, ImageOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Calendar, ArrowRight, Lock, ImageOff, ChevronDown } from 'lucide-react';
 import { LOGO_ICON_URL } from '../constants';
 import { db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -13,12 +13,22 @@ interface PublicationBlock {
   icon?: string;
 }
 
+interface PublicationGroup {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  coverImage: string;
+}
+
 interface Publication {
   id: string;
   title: string;
   slug?: string;
   seoTitle?: string;
   seoDescription?: string;
+  groupId?: string;
+  coverPosition?: string;
   date: string;
   coverImage: string;
   excerpt: string;
@@ -27,46 +37,68 @@ interface Publication {
 
 const Publications: React.FC = () => {
   const [pubs, setPubs] = useState<Publication[]>([]);
+  const [groups, setGroups] = useState<PublicationGroup[]>([]);
+  
   const [selectedPub, setSelectedPub] = useState<Publication | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<PublicationGroup | null>(null);
+  
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Extract slug from URL if present
-  const pathParts = window.location.pathname.split('/');
-  const urlSlug = pathParts.length > 2 ? pathParts[2] : null;
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  // pathParts[0] = 'publicaciones'
+  // pathParts[1] = 'grupo' or postSlug
+  // pathParts[2] = groupSlug (if pathParts[1] === 'grupo')
 
   useEffect(() => {
-    const fetchPubs = async () => {
+    const fetchData = async () => {
       try {
-        const pDoc = await getDoc(doc(db, 'appData', 'publications'));
-        if (pDoc.exists()) {
-          const fetchedPubs = pDoc.data().items || [];
-          setPubs(fetchedPubs);
-          
-          if (urlSlug) {
-            const foundPub = fetchedPubs.find((p: Publication) => p.slug === urlSlug || p.id === urlSlug);
-            if (foundPub) {
-              setSelectedPub(foundPub);
-            }
+        const [pDoc, gDoc] = await Promise.all([
+          getDoc(doc(db, 'appData', 'publications')),
+          getDoc(doc(db, 'appData', 'publicationGroups'))
+        ]);
+        
+        const fetchedPubs = pDoc.exists() ? pDoc.data().items || [] : [];
+        const fetchedGroups = gDoc.exists() ? gDoc.data().items || [] : [];
+        
+        setPubs(fetchedPubs);
+        setGroups(fetchedGroups);
+        
+        if (pathParts.length > 1) {
+          if (pathParts[1] === 'grupo' && pathParts[2]) {
+            const groupSlug = pathParts[2];
+            const foundGroup = fetchedGroups.find((g: PublicationGroup) => g.slug === groupSlug || g.id === groupSlug);
+            if (foundGroup) setSelectedGroup(foundGroup);
+          } else {
+            const postSlug = pathParts[1];
+            const foundPub = fetchedPubs.find((p: Publication) => p.slug === postSlug || p.id === postSlug);
+            if (foundPub) setSelectedPub(foundPub);
           }
         }
       } catch (e) {
-        console.error("Failed to load publications", e);
+        console.error("Failed to load data", e);
         setHasError(true);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchPubs();
-  }, [urlSlug]);
+    fetchData();
+  }, []);
 
-  // Update SEO Meta Tags when a publication is selected
+  // Update SEO Meta Tags
   useEffect(() => {
     if (selectedPub) {
       document.title = selectedPub.seoTitle || `${selectedPub.title} | Authomia`;
       const metaDescription = document.querySelector('meta[name="description"]');
       if (metaDescription) {
         metaDescription.setAttribute('content', selectedPub.seoDescription || selectedPub.excerpt);
+      }
+    } else if (selectedGroup) {
+      document.title = `${selectedGroup.title} | Authomia`;
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute('content', selectedGroup.description);
       }
     } else {
       document.title = 'Authomia | Sistemas de Inteligencia & Automatización';
@@ -75,27 +107,37 @@ const Publications: React.FC = () => {
         metaDescription.setAttribute('content', 'Diagnóstico, arquitectura e implementación de sistemas digitales escalables. Convertimos el caos operativo en orden estratégico.');
       }
     }
-  }, [selectedPub]);
+  }, [selectedPub, selectedGroup]);
 
-  // Safe logo fallback
   const logoUrl = LOGO_ICON_URL || "https://imgur.com/R48vhCC.png";
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    e.currentTarget.style.display = 'none'; // Hide broken images
+    e.currentTarget.style.display = 'none';
   };
 
   const handlePubClick = (pub: Publication) => {
     const targetSlug = pub.slug || pub.id;
     window.history.pushState({}, '', `/publicaciones/${targetSlug}`);
     setSelectedPub(pub);
+    setSelectedGroup(null);
+    window.scrollTo(0, 0);
+  };
+
+  const handleGroupClick = (group: PublicationGroup) => {
+    const targetSlug = group.slug || group.id;
+    window.history.pushState({}, '', `/publicaciones/grupo/${targetSlug}`);
+    setSelectedGroup(group);
+    setSelectedPub(null);
+    window.scrollTo(0, 0);
   };
 
   const handleBackClick = () => {
     window.history.pushState({}, '', '/publicaciones');
     setSelectedPub(null);
+    setSelectedGroup(null);
+    window.scrollTo(0, 0);
   };
 
-  // Generate Table of Contents
   const generateToC = (blocks: PublicationBlock[]) => {
     return blocks
       .map((block, index) => {
@@ -127,19 +169,81 @@ const Publications: React.FC = () => {
     );
   }
 
+  // NAVBAR COMPONENT
+  const Navbar = () => (
+    <nav className="fixed top-0 left-0 w-full z-50 bg-[#020202]/80 backdrop-blur-xl border-b border-white/5">
+      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <a href="/" className="flex items-center gap-3 group">
+          <img src={logoUrl} className="w-8 h-8 invert opacity-90 group-hover:opacity-100 transition-opacity" alt="Authomia" />
+          <span className="font-mono text-sm tracking-widest font-bold hidden sm:block">AUTHOMIA</span>
+        </a>
+        <div className="hidden md:flex items-center gap-8">
+          <a href="/" className="text-[10px] font-mono uppercase tracking-widest text-white/60 hover:text-white transition-colors">Inicio</a>
+          
+          <div className="relative group/nav">
+            <button className="text-[10px] font-mono uppercase tracking-widest text-white/60 hover:text-white transition-colors flex items-center gap-1 py-4">
+              Servicios <ChevronDown size={12} />
+            </button>
+            <div className="absolute top-full left-0 w-64 bg-[#08090B] border border-white/10 rounded-sm opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 shadow-2xl transform translate-y-2 group-hover/nav:translate-y-0">
+               <a href="/#services" className="block p-4 hover:bg-white/5 border-b border-white/5 transition-colors">
+                 <span className="block text-authomia-blueLight font-mono text-[10px] mb-1">BLUE DIAMOND</span>
+                 <span className="text-sm">Automatización de Flujos</span>
+               </a>
+               <a href="/#services" className="block p-4 hover:bg-white/5 transition-colors">
+                 <span className="block text-authomia-redLight font-mono text-[10px] mb-1">RED DIAMOND</span>
+                 <span className="text-sm">Sistemas de Inteligencia Core</span>
+               </a>
+            </div>
+          </div>
+
+          <div className="relative group/nav">
+            <button className="text-[10px] font-mono uppercase tracking-widest text-white/60 hover:text-white transition-colors flex items-center gap-1 py-4">
+              Authomia Agency <ChevronDown size={12} />
+            </button>
+            <div className="absolute top-full left-0 w-48 bg-[#08090B] border border-white/10 rounded-sm opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 shadow-2xl transform translate-y-2 group-hover/nav:translate-y-0">
+               <a href="/#contact" className="block p-4 hover:bg-white/5 text-sm transition-colors border-b border-white/5">Contacto</a>
+               <a href="/#about" className="block p-4 hover:bg-white/5 text-sm transition-colors">Quiénes Somos</a>
+            </div>
+          </div>
+
+          {groups.map(g => (
+            <div key={g.id} className="relative group/nav">
+              <button onClick={() => handleGroupClick(g)} className="text-[10px] font-mono uppercase tracking-widest text-white/60 hover:text-white transition-colors flex items-center gap-1 py-4">
+                {g.title} <ChevronDown size={12} />
+              </button>
+              <div className="absolute top-full left-0 w-80 bg-[#08090B] border border-white/10 rounded-sm opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 shadow-2xl p-2 transform translate-y-2 group-hover/nav:translate-y-0">
+                 {pubs.filter(p => p.groupId === g.id).slice(0, 5).map(p => (
+                   <button key={p.id} onClick={() => handlePubClick(p)} className="w-full text-left block p-3 hover:bg-white/5 rounded-sm transition-colors">
+                     <span className="block text-xs text-white/90 truncate">{p.title}</span>
+                   </button>
+                 ))}
+                 <button onClick={() => handleGroupClick(g)} className="w-full text-left block p-3 text-[10px] font-mono text-authomia-blueLight uppercase tracking-widest hover:bg-white/5 rounded-sm mt-2 border-t border-white/5 transition-colors">
+                   Ver todo en {g.title} &rarr;
+                 </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </nav>
+  );
+
   // VIEW SINGLE PUBLICATION
   if (selectedPub) {
     const toc = generateToC(selectedPub.blocks);
 
     return (
       <div className="min-h-screen bg-[#020202] text-white font-sans">
+        <Navbar />
+        
         {/* Banner Section */}
-        <div className="relative w-full h-[50vh] md:h-[60vh] bg-[#08090B] overflow-hidden flex items-end pb-16 px-6">
+        <div className="relative w-full min-h-[60vh] md:min-h-[70vh] bg-[#08090B] overflow-hidden flex flex-col justify-end pb-16 px-6 pt-32">
           {selectedPub.coverImage && (
             <>
               <img 
                 src={selectedPub.coverImage} 
-                className="absolute inset-0 w-full h-full object-cover opacity-40" 
+                className="absolute inset-0 w-full h-full object-cover opacity-30" 
+                style={{ objectPosition: selectedPub.coverPosition || 'center' }}
                 alt="Cover" 
                 onError={handleImageError}
               />
@@ -148,7 +252,7 @@ const Publications: React.FC = () => {
           )}
           <div className="relative z-10 max-w-7xl mx-auto w-full">
             <button onClick={handleBackClick} className="mb-8 flex items-center gap-2 text-white/50 hover:text-white transition-colors text-xs font-mono uppercase tracking-widest">
-              <ArrowLeft size={14} /> Volver a Publicaciones
+              <ArrowLeft size={14} /> Volver
             </button>
             <span className="text-authomia-blueLight font-mono text-xs uppercase tracking-widest mb-4 block">{selectedPub.date}</span>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-light leading-tight max-w-4xl">{selectedPub.title}</h1>
@@ -163,7 +267,7 @@ const Publications: React.FC = () => {
           
           {/* Left Column: Table of Contents */}
           <div className="lg:col-span-3 hidden lg:block">
-            <div className="sticky top-24">
+            <div className="sticky top-32">
               <h3 className="text-xs font-mono text-white/40 uppercase tracking-widest mb-6">Tabla de Contenidos</h3>
               <nav className="space-y-3 border-l border-white/10 pl-4">
                 {toc.map((item: any) => (
@@ -190,10 +294,10 @@ const Publications: React.FC = () => {
                   const blockId = `heading-${idx}`;
                   return (
                   <div key={idx}>
-                     {block.type === 'heading' && <h2 id={blockId} className="text-3xl md:text-4xl font-light text-white mb-6 mt-12 scroll-mt-24">{block.content}</h2>}
-                     {block.type === 'h2' && <h3 id={blockId} className="text-2xl md:text-3xl font-medium text-white/90 mb-4 mt-10 scroll-mt-24">{block.content}</h3>}
-                     {block.type === 'h3' && <h4 id={blockId} className="text-xl md:text-2xl font-medium text-white/80 mb-3 mt-8 scroll-mt-24">{block.content}</h4>}
-                     {block.type === 'h4' && <h5 id={blockId} className="text-lg md:text-xl font-medium text-white/70 mb-2 mt-6 scroll-mt-24">{block.content}</h5>}
+                     {block.type === 'heading' && <h2 id={blockId} className="text-3xl md:text-4xl font-light text-white mb-6 mt-12 scroll-mt-32">{block.content}</h2>}
+                     {block.type === 'h2' && <h3 id={blockId} className="text-2xl md:text-3xl font-medium text-white/90 mb-4 mt-10 scroll-mt-32">{block.content}</h3>}
+                     {block.type === 'h3' && <h4 id={blockId} className="text-xl md:text-2xl font-medium text-white/80 mb-3 mt-8 scroll-mt-32">{block.content}</h4>}
+                     {block.type === 'h4' && <h5 id={blockId} className="text-lg md:text-xl font-medium text-white/70 mb-2 mt-6 scroll-mt-32">{block.content}</h5>}
                      
                      {block.type === 'text' && <p className="text-lg text-white/70 font-light leading-relaxed whitespace-pre-line">{block.content}</p>}
                      
@@ -255,7 +359,7 @@ const Publications: React.FC = () => {
 
           {/* Right Column: Recommendations / Related */}
           <div className="lg:col-span-3">
-            <div className="sticky top-24">
+            <div className="sticky top-32">
               <h3 className="text-xs font-mono text-white/40 uppercase tracking-widest mb-6">Recomendaciones</h3>
               <div className="space-y-6">
                 {pubs.filter(p => p.id !== selectedPub.id).slice(0, 3).map(relatedPub => (
@@ -284,27 +388,87 @@ const Publications: React.FC = () => {
     );
   }
 
+  // VIEW GROUP
+  if (selectedGroup) {
+    const groupPubs = pubs.filter(p => p.groupId === selectedGroup.id);
+    return (
+      <div className="min-h-screen bg-[#050505] text-white font-sans">
+        <Navbar />
+        
+        {/* Group Banner */}
+        <div className="relative w-full min-h-[50vh] bg-[#08090B] overflow-hidden flex flex-col justify-end pb-16 px-6 pt-32 border-b border-white/5">
+          {selectedGroup.coverImage && (
+            <>
+              <img 
+                src={selectedGroup.coverImage} 
+                className="absolute inset-0 w-full h-full object-cover opacity-30" 
+                alt="Group Cover" 
+                onError={handleImageError}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent" />
+            </>
+          )}
+          <div className="relative z-10 max-w-7xl mx-auto w-full text-center">
+            <h1 className="text-4xl md:text-6xl font-light leading-tight mb-6">{selectedGroup.title}</h1>
+            <p className="text-lg text-white/60 font-light max-w-2xl mx-auto leading-relaxed">{selectedGroup.description}</p>
+          </div>
+        </div>
+
+        {/* Group Publications */}
+        <div className="max-w-7xl mx-auto px-6 py-20">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+             {groupPubs.map((pub, idx) => (
+                <motion.div 
+                   key={pub.id}
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   transition={{ delay: idx * 0.1 }}
+                   onClick={() => handlePubClick(pub)}
+                   className="group cursor-pointer bg-[#08090B] border border-white/10 hover:border-authomia-blue/50 transition-colors duration-500 overflow-hidden flex flex-col h-full rounded-sm"
+                >
+                   <div className="h-64 overflow-hidden relative bg-[#020202] flex items-center justify-center">
+                      {pub.coverImage ? (
+                         <img 
+                            src={pub.coverImage} 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80 group-hover:opacity-100" 
+                            style={{ objectPosition: pub.coverPosition || 'center' }}
+                            alt={pub.title} 
+                            onError={handleImageError}
+                         />
+                      ) : (
+                         <div className="w-full h-full flex items-center justify-center">
+                            <span className="font-mono text-4xl text-white/5 font-bold tracking-tighter">AUTHOMIA</span>
+                         </div>
+                      )}
+                      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black via-transparent to-transparent opacity-50" />
+                      <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1 text-[9px] font-mono uppercase tracking-widest border border-white/10 text-white/70">
+                         {pub.date}
+                      </div>
+                   </div>
+                   <div className="p-8 flex-1 flex flex-col">
+                      <h2 className="text-lg font-medium mb-4 group-hover:text-authomia-blueLight transition-colors leading-tight">{pub.title}</h2>
+                      <p className="text-white/40 font-light text-xs line-clamp-3 mb-6 flex-1 leading-relaxed">{pub.excerpt}</p>
+                      <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-white/30 group-hover:text-white transition-colors border-t border-white/5 pt-4">
+                         Leer Entrada <ArrowRight size={10} />
+                      </div>
+                   </div>
+                </motion.div>
+             ))}
+          </div>
+          {groupPubs.length === 0 && (
+            <div className="text-center py-20 text-white/40 font-mono text-sm">
+              No hay publicaciones en este grupo aún.
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // MAIN FEED
   return (
-    <div className="min-h-screen bg-[#050505] text-white pt-20 px-6 overflow-hidden relative">
-       
-       {/* Sophisticated Header */}
-       <div className="absolute top-8 left-8 z-20">
-          <a href="/" className="flex items-center gap-2 text-white/50 hover:text-white transition-colors text-xs font-mono uppercase tracking-widest">
-             <ArrowLeft size={14} /> Volver al Inicio
-          </a>
-       </div>
-       <div className="flex justify-center mb-16 relative z-10">
-          <motion.img 
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1 }}
-            src={logoUrl} 
-            alt="Authomia" 
-            className="w-16 h-16 opacity-80 invert mb-6"
-            onError={handleImageError}
-          />
-       </div>
+    <div className="min-h-screen bg-[#050505] text-white pt-32 px-6 overflow-hidden relative">
+       <Navbar />
 
        <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-24">
@@ -312,7 +476,36 @@ const Publications: React.FC = () => {
              <p className="text-white/40 font-mono text-xs uppercase tracking-[0.2em]">Recursos, Actualizaciones y Estrategia</p>
           </div>
 
-          {/* EMPTY STATE */}
+          {/* GROUPS SECTION */}
+          {groups.length > 0 && (
+            <div className="mb-24">
+              <h2 className="text-xs font-mono text-white/40 uppercase tracking-widest mb-8 border-b border-white/10 pb-4">Categorías</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {groups.map((group, idx) => (
+                  <motion.div 
+                    key={group.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    onClick={() => handleGroupClick(group)}
+                    className="group cursor-pointer relative overflow-hidden rounded-sm border border-white/10 aspect-[2/1] flex items-center justify-center"
+                  >
+                    {group.coverImage && (
+                      <img src={group.coverImage} className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 group-hover:scale-105 transition-all duration-700" alt={group.title} onError={handleImageError} />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                    <div className="relative z-10 text-center p-6">
+                      <h3 className="text-xl font-medium text-white group-hover:text-authomia-blueLight transition-colors">{group.title}</h3>
+                      <p className="text-xs text-white/60 mt-2 line-clamp-2">{group.description}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ALL POSTS SECTION */}
+          <h2 className="text-xs font-mono text-white/40 uppercase tracking-widest mb-8 border-b border-white/10 pb-4">Últimas Publicaciones</h2>
           {pubs.length === 0 ? (
              <div className="flex flex-col items-center justify-center min-h-[40vh]">
                 <div className="relative w-32 h-32 flex items-center justify-center mb-8">
@@ -324,12 +517,8 @@ const Publications: React.FC = () => {
                 <p className="text-xs text-white/20 font-light max-w-sm text-center mb-8">
                    No hay nada nuevo aquí, vuelve más tarde. La base de conocimientos se está compilando.
                 </p>
-                <a href="/" className="px-6 py-3 border border-white/10 text-white/50 hover:text-white hover:border-white/30 transition-all font-mono text-xs uppercase tracking-widest flex items-center gap-2">
-                   <ArrowLeft size={14} /> Volver al Inicio
-                </a>
              </div>
           ) : (
-            // GRID STATE
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
                {pubs.map((pub, idx) => (
                   <motion.div 
@@ -345,12 +534,9 @@ const Publications: React.FC = () => {
                            <img 
                               src={pub.coverImage} 
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80 group-hover:opacity-100" 
+                              style={{ objectPosition: pub.coverPosition || 'center' }}
                               alt={pub.title} 
-                              onError={(e) => {
-                                 e.currentTarget.style.display = 'none';
-                                 e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center');
-                                 // Add placeholder content via DOM manipulation logic or just fallback to container style
-                              }}
+                              onError={handleImageError}
                            />
                         ) : (
                            <div className="w-full h-full flex items-center justify-center">
