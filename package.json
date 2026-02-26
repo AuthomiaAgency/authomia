@@ -11,12 +11,19 @@
   "dependencies": {
     "@emailjs/browser": "4.1.0",
     "@google/genai": "^1.42.0",
+    "@types/turndown": "^5.0.6",
     "firebase": "^12.9.0",
     "framer-motion": "^12.34.2",
     "lucide-react": "^0.574.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "recharts": "^3.7.0"
+    "react-markdown": "^10.1.0",
+    "recharts": "^3.7.0",
+    "rehype-katex": "^7.0.1",
+    "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "turndown": "^7.2.2"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

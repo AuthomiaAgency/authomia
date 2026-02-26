@@ -4,6 +4,12 @@ import { ArrowLeft, Calendar, ArrowRight, Lock, ImageOff, ChevronDown, X, Send, 
 import { LOGO_ICON_URL } from '../constants';
 import { db } from '../lib/firebase';
 import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 interface PublicationBlock {
   type: 'text' | 'image' | 'button' | 'heading' | 'h2' | 'h3' | 'h4' | 'quote' | 'divider' | 'video';
@@ -331,7 +337,16 @@ const Publications: React.FC = () => {
                      {block.type === 'h3' && <h4 id={blockId} className="text-xl md:text-2xl font-medium text-white/80 mb-3 mt-8 scroll-mt-32">{block.content}</h4>}
                      {block.type === 'h4' && <h5 id={blockId} className="text-lg md:text-xl font-medium text-white/70 mb-2 mt-6 scroll-mt-32">{block.content}</h5>}
                      
-                     {block.type === 'text' && <p className="text-lg text-white/70 font-light leading-relaxed whitespace-pre-line text-justify">{block.content}</p>}
+                     {block.type === 'text' && (
+                        <div className="prose prose-invert prose-lg max-w-none text-white/70 font-light leading-relaxed text-justify prose-p:mb-6 prose-a:text-authomia-blueLight prose-a:no-underline hover:prose-a:underline prose-strong:text-white prose-strong:font-medium prose-code:text-authomia-blueLight prose-code:bg-authomia-blue/10 prose-code:px-1 prose-code:rounded prose-pre:bg-[#0A0A0A] prose-pre:border prose-pre:border-white/10 prose-blockquote:border-l-authomia-blueLight prose-blockquote:bg-white/[0.02] prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:not-italic prose-blockquote:text-white/90 prose-ul:list-disc prose-ol:list-decimal prose-li:marker:text-authomia-blueLight prose-table:border-collapse prose-th:border prose-th:border-white/20 prose-th:p-2 prose-td:border prose-td:border-white/10 prose-td:p-2 prose-hr:border-white/10 prose-img:rounded-lg prose-img:border prose-img:border-white/10">
+                           <ReactMarkdown 
+                              remarkPlugins={[remarkGfm, remarkMath]} 
+                              rehypePlugins={[rehypeRaw, rehypeKatex]}
+                           >
+                              {block.content}
+                           </ReactMarkdown>
+                        </div>
+                     )}
                      
                      {block.type === 'quote' && (
                         <blockquote className="border-l-2 border-authomia-blueLight pl-6 py-2 my-10 bg-white/[0.02] rounded-r-lg">

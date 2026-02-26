@@ -312,14 +312,15 @@ const Manager: React.FC = () => {
        }
     };
 
-    for (const line of lines) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
       const trimmed = line.trim();
       
       // Code Block Detection
-      if (trimmed.startsWith('```')) {
+      if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
         if (inCodeBlock) {
           // End of code block
-          newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'code', content: codeContent });
+          newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'code', content: codeContent.trim() });
           codeContent = '';
           inCodeBlock = false;
         } else {
@@ -335,28 +336,39 @@ const Manager: React.FC = () => {
         continue;
       }
 
-      // Headings
-      if (trimmed.startsWith('# ')) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'heading', content: trimmed.replace(/^#\s+/, '') }); continue; }
-      if (trimmed.startsWith('## ')) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h2', content: trimmed.replace(/^##\s+/, '') }); continue; }
-      if (trimmed.startsWith('### ')) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h3', content: trimmed.replace(/^###\s+/, '') }); continue; }
-      if (trimmed.startsWith('#### ')) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h4', content: trimmed.replace(/^####\s+/, '') }); continue; }
-      
-      // Quotes
-      if (trimmed.startsWith('> ')) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'quote', content: trimmed.replace(/^>\s+/, '') }); continue; }
-      
-      // Dividers
-      if (trimmed === '---' || trimmed === '***') { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'divider', content: '' }); continue; }
-
-      // Images
-      const imgMatch = line.match(/^!\[.*?\]\((.*?)\)/);
-      if (imgMatch) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'image', content: imgMatch[1] }); continue; }
-
-      // Empty lines flush text
-      if (!trimmed) {
-         flushText();
-         continue;
+      // Alternative Headings (Title \n === or ---)
+      if (i + 1 < lines.length && trimmed.length > 0) {
+         const nextLine = lines[i + 1].trim();
+         if (nextLine.match(/^={3,}$/)) {
+            flushText();
+            newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'heading', content: trimmed });
+            i++; // skip the === line
+            continue;
+         }
+         if (nextLine.match(/^-{3,}$/) && !trimmed.match(/^\|.*\|$/)) { // Ensure it's not a table header
+            flushText();
+            newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h2', content: trimmed });
+            i++; // skip the --- line
+            continue;
+         }
       }
 
+      // Standard Headings
+      if (trimmed.match(/^#\s+(.*)/)) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'heading', content: trimmed.replace(/^#\s+/, '') }); continue; }
+      if (trimmed.match(/^##\s+(.*)/)) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h2', content: trimmed.replace(/^##\s+/, '') }); continue; }
+      if (trimmed.match(/^###\s+(.*)/)) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h3', content: trimmed.replace(/^###\s+/, '') }); continue; }
+      if (trimmed.match(/^####\s+(.*)/)) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h4', content: trimmed.replace(/^####\s+/, '') }); continue; }
+      if (trimmed.match(/^#####+\s+(.*)/)) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h4', content: trimmed.replace(/^#####+\s+/, '') }); continue; } // Map H5/H6 to H4 block
+      
+      // Dividers
+      if (trimmed.match(/^(\*\*\*|---|___)$/)) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'divider', content: '' }); continue; }
+
+      // Images (only if they are the only thing on the line)
+      const imgMatch = trimmed.match(/^!\[.*?\]\((.*?)\)$/);
+      if (imgMatch) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'image', content: imgMatch[1] }); continue; }
+
+      // Everything else goes into the current text block.
+      // This allows react-markdown to natively handle lists, tables, blockquotes, math, bold, italic, etc.
       currentTextBlock += (currentTextBlock ? '\n' : '') + line;
     }
     flushText();
