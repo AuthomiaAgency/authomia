@@ -191,49 +191,59 @@ const Manager: React.FC = () => {
 
     const loadData = async () => {
       try {
-        const [pDoc, pubDoc, pubGroupDoc, sDoc, mDoc, appDoc, teamDoc, authorsDoc, logsDoc] = await Promise.all([
-           getDoc(doc(db, 'appData', 'partners')),
-           getDoc(doc(db, 'appData', 'publications')),
-           getDoc(doc(db, 'appData', 'publicationGroups')),
-           getDoc(doc(db, 'appData', 'surveys')),
-           getDoc(doc(db, 'appData', 'materials')),
-           getDoc(doc(db, 'appData', 'applications')),
-           getDoc(doc(db, 'appData', 'team')),
-           getDoc(doc(db, 'appData', 'authors')),
-           getDoc(doc(db, 'appData', 'actionLogs'))
-        ]);
+        // Load each collection independently to prevent total failure
+        const loadCollection = async (col: string, setter: any) => {
+           try {
+              const d = await getDoc(doc(db, 'appData', col));
+              if (d.exists()) setter(d.data().items || []);
+           } catch (e) {
+              console.error(`Failed to load ${col}`, e);
+           }
+        };
 
-        if (pDoc.exists()) setPartners(pDoc.data().items || []);
-        if (pubDoc.exists()) setPublications(pubDoc.data().items || []);
-        if (pubGroupDoc.exists()) setPublicationGroups(pubGroupDoc.data().items || []);
-        if (sDoc.exists()) setSurveys(sDoc.data().items || []);
-        if (mDoc.exists()) setMaterials(mDoc.data().items || []);
+        await Promise.all([
+           loadCollection('partners', setPartners),
+           loadCollection('publications', setPublications),
+           loadCollection('publicationGroups', setPublicationGroups),
+           loadCollection('surveys', setSurveys),
+           loadCollection('materials', setMaterials),
+           loadCollection('applications', setApplications), // This will be merged later
+           loadCollection('team', setTeamMembers),
+           loadCollection('authors', setAuthors),
+           loadCollection('actionLogs', setActionLogs)
+        ]);
         
         // Fetch Writer Applications from Collection
-        const writerAppsSnap = await getDocs(collection(db, 'writer_applications'));
-        const writerApps = writerAppsSnap.docs.map(d => {
-           const data = d.data();
-           return {
-              id: d.id,
-              name: data.name || 'Unknown',
-              email: data.email || '',
-              specialty: data.specialty || '',
-              pastProjects: data.message || '', 
-              message: data.message,
-              type: data.type || 'guest',
-              status: data.status || 'pending',
-              source: 'Authomia Publications',
-              date: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
-              _isFirestoreCollection: true
-           } as JobApplication;
-        });
+        try {
+           const writerAppsSnap = await getDocs(collection(db, 'writer_applications'));
+           const writerApps = writerAppsSnap.docs.map(d => {
+              const data = d.data();
+              return {
+                 id: d.id,
+                 name: data.name || 'Unknown',
+                 email: data.email || '',
+                 specialty: data.specialty || '',
+                 pastProjects: data.message || '', 
+                 message: data.message,
+                 type: data.type || 'guest',
+                 status: data.status || 'pending',
+                 source: 'Authomia Publications',
+                 date: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+                 _isFirestoreCollection: true
+              } as JobApplication;
+           });
 
-        const appDataApps = appDoc.exists() ? (appDoc.data().items || []) : [];
-        setApplications([...appDataApps, ...writerApps].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+           // Merge with existing applications (loaded via loadCollection above)
+           setApplications(prev => {
+              // Filter out any potential duplicates if needed, though IDs should be unique
+              const existingIds = new Set(prev.map(a => a.id));
+              const newWriterApps = writerApps.filter(a => !existingIds.has(a.id));
+              return [...prev, ...newWriterApps].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+           });
+        } catch (e) {
+           console.error("Failed to load writer applications", e);
+        }
 
-        if (teamDoc.exists()) setTeamMembers(teamDoc.data().items || []);
-        if (authorsDoc.exists()) setAuthors(authorsDoc.data().items || []);
-        if (logsDoc.exists()) setActionLogs(logsDoc.data().items || []);
       } catch (e) {
         console.error("Error loading data", e);
       }
@@ -432,14 +442,14 @@ const Manager: React.FC = () => {
 
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {[
-            { id: 'publications', icon: FileText, label: 'Publicaciones' },
-            { id: 'partners', icon: Users, label: 'Partners' },
-            { id: 'surveys', icon: LayoutGrid, label: 'Encuestas' },
-            { id: 'materials', icon: BarChart2, label: 'Materiales' },
-            { id: 'applications', icon: Send, label: 'Postulantes' },
-            { id: 'team', icon: Lock, label: 'Equipo / Socios' },
-            { id: 'authors', icon: Edit2, label: 'Autores' },
-          ].map(item => (
+            { id: 'publications', icon: FileText, label: 'Publicaciones', allowed: ['admin', 'socio', 'writer'] },
+            { id: 'partners', icon: Users, label: 'Partners', allowed: ['admin', 'socio'] },
+            { id: 'surveys', icon: LayoutGrid, label: 'Encuestas', allowed: ['admin', 'socio'] },
+            { id: 'materials', icon: BarChart2, label: 'Materiales', allowed: ['admin', 'socio', 'writer'] },
+            { id: 'applications', icon: Send, label: 'Postulantes', allowed: ['admin'] },
+            { id: 'team', icon: Lock, label: 'Equipo / Socios', allowed: ['admin'] },
+            { id: 'authors', icon: Edit2, label: 'Autores', allowed: ['admin', 'socio'] },
+          ].filter(item => item.allowed.includes(currentUser?.role || 'admin')).map(item => (
             <button 
               key={item.id}
               onClick={() => setActiveTab(item.id as any)}
@@ -501,7 +511,7 @@ const Manager: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                       {/* New Post Card */}
                       <button 
-                        onClick={() => setEditingPub({ id: Date.now().toString(), title: 'Untitled Draft', date: new Date().toISOString().split('T')[0], coverImage: '', excerpt: '', blocks: [], status: 'draft' })}
+                        onClick={() => setEditingPub({ id: Date.now().toString(), title: 'Untitled Draft', date: new Date().toISOString().split('T')[0], coverImage: '', excerpt: '', blocks: [], status: 'draft', authorId: currentUser?.id })}
                         className="group relative aspect-[4/5] rounded-xl border border-dashed border-white/10 hover:border-authomia-blueLight/50 hover:bg-authomia-blueLight/5 transition-all flex flex-col items-center justify-center gap-4"
                       >
                         <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -511,12 +521,15 @@ const Manager: React.FC = () => {
                       </button>
 
                       {/* Post Cards */}
-                      {publications.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase())).map(p => (
+                      {publications
+                        .filter(p => {
+                           // Writers can only see their own posts
+                           if (currentUser?.role === 'writer') return p.authorId === currentUser.id;
+                           return true;
+                        })
+                        .filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                        .map(p => (
                         <div key={p.id} onClick={() => {
-                          if (currentUser?.role === 'writer' && p.authorId !== currentUser.id) {
-                            alert('No tienes permiso para editar esta publicación.');
-                            return;
-                          }
                           setEditingPub(p);
                         }} className="group relative aspect-[4/5] bg-[#0A0A0A] rounded-xl border border-white/5 hover:border-white/20 overflow-hidden cursor-pointer transition-all hover:-translate-y-1 hover:shadow-2xl">
                           <div className="h-1/2 w-full bg-white/5 relative overflow-hidden">
@@ -536,17 +549,16 @@ const Manager: React.FC = () => {
                             </div>
                             <div className="flex justify-between items-end border-t border-white/5 pt-4">
                               <span className="text-[10px] font-mono text-white/30">{p.date}</span>
-                              <button onClick={(e) => { 
-                                e.stopPropagation(); 
-                                if (currentUser?.role === 'writer' && p.authorId !== currentUser.id) {
-                                  alert('No tienes permiso para eliminar esta publicación.');
-                                  return;
-                                }
-                                if(confirm('Delete post?')) {
-                                  saveToStorage('publications', publications.filter(x => x.id !== p.id), setPublications); 
-                                  logAction('eliminó publicación', p.title);
-                                }
-                              }} className="text-white/20 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
+                              {/* Delete Button Logic */}
+                              {(currentUser?.role === 'admin' || (currentUser?.role === 'writer' && p.authorId === currentUser.id) || (currentUser?.role === 'socio' && p.authorId === currentUser.id)) && (
+                                 <button onClick={(e) => { 
+                                   e.stopPropagation(); 
+                                   if(confirm('Delete post?')) {
+                                     saveToStorage('publications', publications.filter(x => x.id !== p.id), setPublications); 
+                                     logAction('eliminó publicación', p.title);
+                                   }
+                                 }} className="text-white/20 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -555,18 +567,22 @@ const Manager: React.FC = () => {
                   ) : (
                     // Groups Grid
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <button 
-                        onClick={() => setEditingGroup({ id: Date.now().toString(), title: 'New Group', slug: '', description: '', coverImage: '' })}
-                        className="h-40 rounded-xl border border-dashed border-white/10 hover:border-authomia-blueLight/50 hover:bg-authomia-blueLight/5 transition-all flex items-center justify-center gap-2 font-mono text-xs uppercase text-white/40 hover:text-white"
-                      >
-                        <Plus size={16} /> New Group
-                      </button>
+                      {currentUser?.role === 'admin' && (
+                         <button 
+                           onClick={() => setEditingGroup({ id: Date.now().toString(), title: 'New Group', slug: '', description: '', coverImage: '' })}
+                           className="h-40 rounded-xl border border-dashed border-white/10 hover:border-authomia-blueLight/50 hover:bg-authomia-blueLight/5 transition-all flex items-center justify-center gap-2 font-mono text-xs uppercase text-white/40 hover:text-white"
+                         >
+                           <Plus size={16} /> New Group
+                         </button>
+                      )}
                       {publicationGroups.map(g => (
-                        <div key={g.id} onClick={() => setEditingGroup(g)} className="h-40 bg-[#0A0A0A] rounded-xl border border-white/5 p-6 flex flex-col justify-between cursor-pointer hover:border-white/20 transition-all">
+                        <div key={g.id} onClick={() => { if(currentUser?.role === 'admin') setEditingGroup(g); }} className={`h-40 bg-[#0A0A0A] rounded-xl border border-white/5 p-6 flex flex-col justify-between transition-all ${currentUser?.role === 'admin' ? 'cursor-pointer hover:border-white/20' : 'opacity-80'}`}>
                           <h3 className="font-bold text-lg">{g.title}</h3>
                           <div className="flex justify-between items-center">
                             <span className="text-xs font-mono text-white/40">/{g.slug}</span>
-                            <button onClick={(e) => { e.stopPropagation(); saveToStorage('publicationGroups', publicationGroups.filter(x => x.id !== g.id), setPublicationGroups); }} className="text-white/20 hover:text-red-500"><Trash2 size={14} /></button>
+                            {currentUser?.role === 'admin' && (
+                               <button onClick={(e) => { e.stopPropagation(); saveToStorage('publicationGroups', publicationGroups.filter(x => x.id !== g.id), setPublicationGroups); }} className="text-white/20 hover:text-red-500"><Trash2 size={14} /></button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1073,60 +1089,136 @@ const Manager: React.FC = () => {
           {activeTab === 'materials' && (
              <div className="space-y-8">
                 <div className="flex justify-between items-center mb-8">
-                   <h2 className="text-2xl font-light text-white">Materiales</h2>
-                   <button onClick={() => {
-                      const csvContent = "data:text/csv;charset=utf-8," 
-                         + "Email,Fecha,Material\n"
-                         + materials.flatMap(m => m.leads.map(l => `${l.email},${new Date(l.date).toLocaleDateString()},${m.title}`)).join("\n");
-                      const encodedUri = encodeURI(csvContent);
-                      const link = document.createElement("a");
-                      link.setAttribute("href", encodedUri);
-                      link.setAttribute("download", "leads_materiales.csv");
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                   }} className="bg-authomia-blue px-4 py-2 rounded text-xs font-mono uppercase tracking-widest hover:bg-authomia-blueLight transition-all">
-                      Exportar CSV
-                   </button>
+                   <div>
+                      <h2 className="text-2xl font-light text-white">Materiales & Recursos</h2>
+                      <p className="text-xs text-white/40 font-mono uppercase tracking-widest mt-1">Gestión de Lead Magnets y Descargables</p>
+                   </div>
+                  <div className="flex gap-4">
+                      <button onClick={() => {
+                         const csvContent = "data:text/csv;charset=utf-8," 
+                            + "Email,Fecha,Material\n"
+                            + materials.flatMap(m => m.leads.map(l => `${l.email},${new Date(l.date).toLocaleDateString()},${m.title}`)).join("\n");
+                         const encodedUri = encodeURI(csvContent);
+                         const link = document.createElement("a");
+                         link.setAttribute("href", encodedUri);
+                         link.setAttribute("download", "leads_materiales.csv");
+                         document.body.appendChild(link);
+                         link.click();
+                         document.body.removeChild(link);
+                      }} className="bg-authomia-blue px-4 py-2 rounded text-xs font-mono uppercase tracking-widest hover:bg-authomia-blueLight transition-all flex items-center gap-2">
+                         <FileText size={14} /> Exportar CSV
+                      </button>
+                   </div>
                 </div>
                 
-                {/* MIFO SECTION */}
-                <div className="bg-[#0A0A0A] border border-white/5 rounded-xl overflow-hidden mb-8">
-                   <div className="p-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
-                      <h3 className="font-bold text-white">MIFO (Magnet Lead)</h3>
-                      <span className="text-xs font-mono text-white/40">{materials.find(m => m.title === 'MIFO')?.leads.length || 0} Leads</span>
-                   </div>
-                   <table className="w-full text-left border-collapse">
-                      <thead>
-                         <tr className="border-b border-white/10 bg-white/5">
-                            <th className="p-4 text-xs font-mono text-white/50 uppercase tracking-widest font-normal">Email del Lead</th>
-                            <th className="p-4 text-xs font-mono text-white/50 uppercase tracking-widest font-normal">Fecha de Descarga</th>
-                            <th className="p-4 text-xs font-mono text-white/50 uppercase tracking-widest font-normal text-right">Acciones</th>
-                         </tr>
-                      </thead>
-                      <tbody>
-                         {materials.find(m => m.title === 'MIFO')?.leads.map((l, i) => (
-                            <tr key={`mifo-${i}`} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                               <td className="p-4 text-sm text-white">{l.email}</td>
-                               <td className="p-4 text-sm text-white/60">{new Date(l.date).toLocaleDateString()}</td>
-                               <td className="p-4 text-right">
-                                  <button className="text-xs font-mono text-authomia-blueLight hover:underline">Ver Detalles</button>
-                               </td>
-                            </tr>
-                         ))}
-                         {(!materials.find(m => m.title === 'MIFO') || materials.find(m => m.title === 'MIFO')?.leads.length === 0) && (
-                            <tr>
-                               <td colSpan={3} className="p-8 text-center text-white/40 font-mono text-xs">No hay leads registrados para MIFO.</td>
-                            </tr>
-                         )}
-                      </tbody>
-                   </table>
-                </div>
+                {/* MATERIALS GRID */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                   {materials.map(material => {
+                      // Calculate stats for chart (leads per day/month)
+                      const leadsByDate = material.leads.reduce((acc: any, lead) => {
+                         const date = new Date(lead.date).toLocaleDateString();
+                         acc[date] = (acc[date] || 0) + 1;
+                         return acc;
+                      }, {});
+                      const chartData = Object.keys(leadsByDate).map(date => ({ date, leads: leadsByDate[date] })).slice(-7); // Last 7 days with data
 
-                {/* OTHER MATERIALS (Placeholder for future) */}
-                <div className="border border-dashed border-white/10 rounded-xl p-8 text-center">
-                   <p className="text-white/40 font-mono text-xs uppercase tracking-widest">Próximamente: Nuevos Materiales</p>
-                   <p className="text-white/20 text-xs mt-2">Se añadirán nuevas secciones con asistencia técnica.</p>
+                      return (
+                         <div key={material.id} className="bg-[#0A0A0A] border border-white/5 rounded-xl overflow-hidden group hover:border-white/20 transition-all">
+                            <div className="p-6 border-b border-white/5 flex justify-between items-start">
+                               <div>
+                                  <div className="flex items-center gap-3 mb-2">
+                                     <h3 className="font-bold text-lg text-white">{material.title}</h3>
+                                     <span className="text-[10px] font-mono uppercase px-2 py-1 rounded bg-white/5 text-white/50 border border-white/5">{material.type}</span>
+                                  </div>
+                                  {/* Description hidden as per request */}
+                                  <div className="flex items-center gap-4 mt-4">
+                                     <button onClick={() => {
+                                        const url = `${window.location.origin}/recursos/${material.id}`; // Example URL structure
+                                        navigator.clipboard.writeText(url);
+                                        alert('Enlace copiado al portapapeles');
+                                     }} className="text-xs font-mono text-authomia-blueLight hover:underline flex items-center gap-2">
+                                        <Link size={12} /> Copiar Enlace
+                                     </button>
+                                     {currentUser?.role === 'admin' && (
+                                        <button onClick={() => {
+                                           if(confirm('¿Eliminar este material y sus leads?')) {
+                                              const newMaterials = materials.filter(m => m.id !== material.id);
+                                              saveToStorage('materials', newMaterials, setMaterials);
+                                           }
+                                        }} className="text-xs font-mono text-white/40 hover:text-red-500 flex items-center gap-2">
+                                           <Trash2 size={12} /> Eliminar
+                                        </button>
+                                     )}
+                                  </div>
+                               </div>
+                               <div className="text-right">
+                                  <span className="block text-3xl font-light text-white">{material.leads.length}</span>
+                                  <span className="text-[10px] font-mono uppercase tracking-widest text-white/40">Total Leads</span>
+                               </div>
+                            </div>
+                            
+                            {/* CHART AREA */}
+                            <div className="h-32 bg-gradient-to-b from-transparent to-white/[0.02] relative">
+                               {chartData.length > 0 ? (
+                                  <ResponsiveContainer width="100%" height="100%">
+                                     <AreaChart data={chartData}>
+                                        <defs>
+                                           <linearGradient id={`colorLeads-${material.id}`} x1="0" y1="0" x2="0" y2="1">
+                                              <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3}/>
+                                              <stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/>
+                                           </linearGradient>
+                                        </defs>
+                                        <Tooltip 
+                                           contentStyle={{ backgroundColor: '#000', border: '1px solid #333', borderRadius: '4px', fontSize: '12px' }}
+                                           itemStyle={{ color: '#fff' }}
+                                           labelStyle={{ display: 'none' }}
+                                        />
+                                        <Area type="monotone" dataKey="leads" stroke="#4F46E5" strokeWidth={2} fillOpacity={1} fill={`url(#colorLeads-${material.id})`} />
+                                     </AreaChart>
+                                  </ResponsiveContainer>
+                               ) : (
+                                  <div className="absolute inset-0 flex items-center justify-center text-white/20 text-xs font-mono">
+                                     Sin datos suficientes para graficar
+                                  </div>
+                               )}
+                            </div>
+
+                            {/* LEADS TABLE (Collapsible or Scrollable) */}
+                            <div className="max-h-48 overflow-y-auto border-t border-white/5">
+                               <table className="w-full text-left border-collapse">
+                                  <thead className="sticky top-0 bg-[#0A0A0A] z-10">
+                                     <tr className="border-b border-white/10">
+                                        <th className="p-3 text-[10px] font-mono text-white/50 uppercase tracking-widest font-normal">Email</th>
+                                        <th className="p-3 text-[10px] font-mono text-white/50 uppercase tracking-widest font-normal text-right">Fecha</th>
+                                     </tr>
+                                  </thead>
+                                  <tbody>
+                                     {material.leads.slice().reverse().map((lead, i) => (
+                                        <tr key={i} className="border-b border-white/5 hover:bg-white/[0.02]">
+                                           <td className="p-3 text-xs text-white/80">{lead.email}</td>
+                                           <td className="p-3 text-xs text-white/40 text-right font-mono">{new Date(lead.date).toLocaleDateString()}</td>
+                                        </tr>
+                                     ))}
+                                     {material.leads.length === 0 && (
+                                        <tr>
+                                           <td colSpan={2} className="p-4 text-center text-xs text-white/30 font-mono">Esperando descargas...</td>
+                                        </tr>
+                                     )}
+                                  </tbody>
+                               </table>
+                            </div>
+                         </div>
+                      );
+                   })}
+                   
+                   {/* Add New Card (Empty State) */}
+                   {materials.length === 0 && (
+                      <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-xl">
+                         <FileText className="w-12 h-12 text-white/20 mx-auto mb-4" />
+                         <h3 className="text-white/60 font-light mb-2">No hay materiales creados</h3>
+                         <p className="text-xs text-white/40 font-mono mb-6">Solicita a tu administrador técnico la creación de nuevos materiales.</p>
+                      </div>
+                   )}
                 </div>
              </div>
           )}
