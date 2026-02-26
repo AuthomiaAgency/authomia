@@ -23,7 +23,7 @@ import WhoWeArePage from './components/WhoWeArePage'; // NEW
 import ContactPage from './components/ContactPage'; // NEW
 import { CONTENT, LOGO_ICON_URL } from './constants';
 import { Language, LegalDocument } from './types';
-import { Shield, Lock, Eye, ArrowRight, Diamond, Linkedin, Facebook, Instagram, ChevronDown, X, MapPin, Mail, Phone, Send } from 'lucide-react';
+import { Shield, Lock, Eye, ArrowRight, Diamond, Linkedin, Facebook, Instagram, ChevronDown, X, MapPin, Mail, Phone, Send, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from './lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -65,12 +65,15 @@ const App: React.FC = () => {
       const newApp = {
         id: Date.now().toString(),
         ...joinTeamData,
+        source: 'Main Page',
+        status: 'pending',
+        type: 'team',
         date: new Date().toISOString()
       };
       await setDoc(doc(db, 'appData', 'applications'), { items: [...currentApps, newApp] });
       setJoinTeamStatus('success');
       setJoinTeamData({ name: '', email: '', specialty: '', pastProjects: '', socialUrl: '' });
-      setTimeout(() => setJoinTeamStatus('idle'), 5000);
+      // Success message will be shown, no timeout needed to reset to idle immediately
     } catch (err) {
       console.error(err);
       setJoinTeamStatus('error');
@@ -243,7 +246,7 @@ const App: React.FC = () => {
             <p className="text-white/40 font-mono text-xs uppercase tracking-widest">Buscamos talento excepcional para proyectos de alto impacto.</p>
           </div>
 
-          {!showJoinForm ? (
+          {!showJoinForm && joinTeamStatus !== 'success' ? (
              <div className="flex justify-center">
                 <button 
                    onClick={() => setShowJoinForm(true)}
@@ -262,6 +265,23 @@ const App: React.FC = () => {
                    </span>
                 </button>
              </div>
+          ) : joinTeamStatus === 'success' ? (
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.9 }}
+               animate={{ opacity: 1, scale: 1 }}
+               className="bg-[#0A0A0A] border border-green-500/20 p-12 rounded-xl shadow-2xl text-center max-w-2xl mx-auto"
+             >
+               <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                 <CheckCircle2 className="text-green-500 w-8 h-8" />
+               </div>
+               <h3 className="text-2xl font-light text-white mb-4">¡Postulación Enviada!</h3>
+               <p className="text-white/60 font-mono text-sm leading-relaxed">
+                 Hemos recibido tu información correctamente. Nuestro equipo revisará tu perfil y te contactaremos en un plazo máximo de <span className="text-white font-bold">48 horas</span> si tu perfil encaja con nuestras necesidades actuales.
+               </p>
+               <div className="mt-8 pt-8 border-t border-white/5">
+                 <p className="text-[10px] uppercase tracking-widest text-white/30">Authomia Recruitment Team</p>
+               </div>
+             </motion.div>
           ) : (
              <motion.form 
                initial={{ opacity: 0, y: 20 }}

@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 import { db, auth } from '../lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 
 // --- TYPES ---
@@ -73,8 +73,14 @@ interface JobApplication {
   email: string;
   specialty: string;
   pastProjects: string;
-  cvUrl?: string;
+  cvUrl?: string; // Legacy
+  socialUrl?: string;
   date: string;
+  source?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  type?: 'guest' | 'team';
+  message?: string; // For writer applications
+  _isFirestoreCollection?: boolean;
 }
 
 interface SurveyQuestion {
@@ -101,6 +107,7 @@ interface Survey {
   responses: SurveyResponse[];
   ctaLabel?: string;
   ctaLink?: string;
+  active: boolean;
 }
 
 interface MaterialLead {
@@ -122,6 +129,7 @@ interface TeamMember {
   email: string;
   password?: string; // Stored in plain text for simplicity in this prototype
   role: 'admin' | 'socio' | 'writer';
+  active?: boolean;
 }
 
 interface Author {
@@ -183,31 +191,48 @@ const Manager: React.FC = () => {
 
     const loadData = async () => {
       try {
-        const pDoc = await getDoc(doc(db, 'appData', 'partners'));
+        const [pDoc, pubDoc, pubGroupDoc, sDoc, mDoc, appDoc, teamDoc, authorsDoc, logsDoc] = await Promise.all([
+           getDoc(doc(db, 'appData', 'partners')),
+           getDoc(doc(db, 'appData', 'publications')),
+           getDoc(doc(db, 'appData', 'publicationGroups')),
+           getDoc(doc(db, 'appData', 'surveys')),
+           getDoc(doc(db, 'appData', 'materials')),
+           getDoc(doc(db, 'appData', 'applications')),
+           getDoc(doc(db, 'appData', 'team')),
+           getDoc(doc(db, 'appData', 'authors')),
+           getDoc(doc(db, 'appData', 'actionLogs'))
+        ]);
+
         if (pDoc.exists()) setPartners(pDoc.data().items || []);
-
-        const pubDoc = await getDoc(doc(db, 'appData', 'publications'));
         if (pubDoc.exists()) setPublications(pubDoc.data().items || []);
-
-        const pubGroupDoc = await getDoc(doc(db, 'appData', 'publicationGroups'));
         if (pubGroupDoc.exists()) setPublicationGroups(pubGroupDoc.data().items || []);
-
-        const sDoc = await getDoc(doc(db, 'appData', 'surveys'));
         if (sDoc.exists()) setSurveys(sDoc.data().items || []);
-
-        const mDoc = await getDoc(doc(db, 'appData', 'materials'));
         if (mDoc.exists()) setMaterials(mDoc.data().items || []);
+        
+        // Fetch Writer Applications from Collection
+        const writerAppsSnap = await getDocs(collection(db, 'writer_applications'));
+        const writerApps = writerAppsSnap.docs.map(d => {
+           const data = d.data();
+           return {
+              id: d.id,
+              name: data.name || 'Unknown',
+              email: data.email || '',
+              specialty: data.specialty || '',
+              pastProjects: data.message || '', 
+              message: data.message,
+              type: data.type || 'guest',
+              status: data.status || 'pending',
+              source: 'Authomia Publications',
+              date: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString(),
+              _isFirestoreCollection: true
+           } as JobApplication;
+        });
 
-        const appDoc = await getDoc(doc(db, 'appData', 'applications'));
-        if (appDoc.exists()) setApplications(appDoc.data().items || []);
+        const appDataApps = appDoc.exists() ? (appDoc.data().items || []) : [];
+        setApplications([...appDataApps, ...writerApps].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
-        const teamDoc = await getDoc(doc(db, 'appData', 'team'));
         if (teamDoc.exists()) setTeamMembers(teamDoc.data().items || []);
-
-        const authorsDoc = await getDoc(doc(db, 'appData', 'authors'));
         if (authorsDoc.exists()) setAuthors(authorsDoc.data().items || []);
-
-        const logsDoc = await getDoc(doc(db, 'appData', 'actionLogs'));
         if (logsDoc.exists()) setActionLogs(logsDoc.data().items || []);
       } catch (e) {
         console.error("Error loading data", e);
@@ -226,6 +251,17 @@ const Manager: React.FC = () => {
 
   const logAction = async (action: string, target: string) => {
     const user = currentUser ? currentUser.email : (auth.currentUser?.email || 'Admin');
+    
+    // Prevent duplicates: Check if the last log is identical
+    if (actionLogs.length > 0) {
+       const lastLog = actionLogs[0];
+       // Check if action, target, and user are the same, and if it happened recently (e.g., within 5 seconds)
+       const timeDiff = new Date().getTime() - new Date(lastLog.date).getTime();
+       if (lastLog.action === action && lastLog.target === target && lastLog.user === user && timeDiff < 5000) {
+          return;
+       }
+    }
+
     const newLog: ActionLog = {
       id: Date.now().toString(),
       user,
@@ -246,84 +282,80 @@ const Manager: React.FC = () => {
     }
   };
 
+  const [showSmartPaste, setShowSmartPaste] = useState(false);
+  const [smartPasteContent, setSmartPasteContent] = useState('');
+
   // --- SMART PASTE ENGINE ---
-  const handleSmartPaste = async (mode: 'split' | 'single' = 'split') => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (!text) return;
+  const processSmartPaste = () => {
+    if (!smartPasteContent) return;
 
-      const newBlocks: PublicationBlock[] = [];
+    const newBlocks: PublicationBlock[] = [];
+    const lines = smartPasteContent.split('\n');
+    let inCodeBlock = false;
+    let codeContent = '';
+    let currentTextBlock = '';
 
-      if (mode === 'single') {
-         newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'text', content: text });
-      } else {
-         const lines = text.split('\n');
-         let inCodeBlock = false;
-         let codeContent = '';
-         let currentTextBlock = '';
+    const flushText = () => {
+       if (currentTextBlock.trim()) {
+          newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'text', content: currentTextBlock.trim() });
+          currentTextBlock = '';
+       }
+    };
 
-         for (const line of lines) {
-           const trimmed = line.trim();
-           
-           // Code Block Detection
-           if (trimmed.startsWith('```')) {
-             if (currentTextBlock) {
-                newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'text', content: currentTextBlock });
-                currentTextBlock = '';
-             }
-             if (inCodeBlock) {
-               // End of code block
-               newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'code', content: codeContent });
-               codeContent = '';
-               inCodeBlock = false;
-             } else {
-               // Start of code block
-               inCodeBlock = true;
-             }
-             continue;
-           }
-
-           if (inCodeBlock) {
-             codeContent += line + '\n';
-             continue;
-           }
-
-           if (!trimmed) {
-              if (currentTextBlock) {
-                 newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'text', content: currentTextBlock });
-                 currentTextBlock = '';
-              }
-              continue;
-           }
-
-           // Markdown Detection
-           if (trimmed.startsWith('# ') || trimmed.startsWith('## ') || trimmed.startsWith('### ') || trimmed.startsWith('#### ') || trimmed.startsWith('> ') || trimmed.startsWith('---')) {
-              if (currentTextBlock) {
-                 newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'text', content: currentTextBlock });
-                 currentTextBlock = '';
-              }
-              
-              if (trimmed.startsWith('# ')) newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'heading', content: trimmed.replace('# ', '') });
-              else if (trimmed.startsWith('## ')) newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h2', content: trimmed.replace('## ', '') });
-              else if (trimmed.startsWith('### ')) newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h3', content: trimmed.replace('### ', '') });
-              else if (trimmed.startsWith('#### ')) newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h4', content: trimmed.replace('#### ', '') });
-              else if (trimmed.startsWith('> ')) newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'quote', content: trimmed.replace('> ', '') });
-              else if (trimmed.startsWith('---')) newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'divider', content: '' });
-           } else {
-              currentTextBlock += (currentTextBlock ? '\n' : '') + line;
-           }
-         }
-         if (currentTextBlock) {
-            newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'text', content: currentTextBlock });
-         }
+    for (const line of lines) {
+      const trimmed = line.trim();
+      
+      // Code Block Detection
+      if (trimmed.startsWith('```')) {
+        if (inCodeBlock) {
+          // End of code block
+          newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'code', content: codeContent });
+          codeContent = '';
+          inCodeBlock = false;
+        } else {
+          // Start of code block
+          flushText();
+          inCodeBlock = true;
+        }
+        continue;
       }
 
-      if (editingPub) {
-        setEditingPub({ ...editingPub, blocks: [...editingPub.blocks, ...newBlocks] });
+      if (inCodeBlock) {
+        codeContent += line + '\n';
+        continue;
       }
-    } catch (err) {
-      alert('Clipboard access denied. Please allow permissions.');
+
+      // Headings
+      if (trimmed.startsWith('# ')) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'heading', content: trimmed.replace(/^#\s+/, '') }); continue; }
+      if (trimmed.startsWith('## ')) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h2', content: trimmed.replace(/^##\s+/, '') }); continue; }
+      if (trimmed.startsWith('### ')) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h3', content: trimmed.replace(/^###\s+/, '') }); continue; }
+      if (trimmed.startsWith('#### ')) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h4', content: trimmed.replace(/^####\s+/, '') }); continue; }
+      
+      // Quotes
+      if (trimmed.startsWith('> ')) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'quote', content: trimmed.replace(/^>\s+/, '') }); continue; }
+      
+      // Dividers
+      if (trimmed === '---' || trimmed === '***') { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'divider', content: '' }); continue; }
+
+      // Images
+      const imgMatch = line.match(/^!\[.*?\]\((.*?)\)/);
+      if (imgMatch) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'image', content: imgMatch[1] }); continue; }
+
+      // Empty lines flush text
+      if (!trimmed) {
+         flushText();
+         continue;
+      }
+
+      currentTextBlock += (currentTextBlock ? '\n' : '') + line;
     }
+    flushText();
+
+    if (editingPub) {
+      setEditingPub({ ...editingPub, blocks: [...editingPub.blocks, ...newBlocks] });
+    }
+    setSmartPasteContent('');
+    setShowSmartPaste(false);
   };
 
   // --- LOGIN SCREEN ---
@@ -345,11 +377,20 @@ const Manager: React.FC = () => {
             try { 
               await signInWithEmailAndPassword(auth, email, password);
               const adminUser = teamMembers.find(m => m.email === email) || { id: 'admin', email, role: 'admin' } as TeamMember;
+              if (adminUser.active === false) {
+                 alert('Acceso denegado. Tu cuenta ha sido desactivada.');
+                 await signOut(auth);
+                 return;
+              }
               setCurrentUser(adminUser);
             } catch(err) { 
               // Fallback to Team Members (Socios)
               const socio = teamMembers.find(m => m.email === email && m.password === password);
               if (socio) {
+                if (socio.active === false) {
+                   setError('Acceso denegado. Tu cuenta ha sido desactivada.');
+                   return;
+                }
                 setIsAuthenticated(true);
                 setIsSocio(true);
                 setCurrentUser(socio);
@@ -809,7 +850,7 @@ const Manager: React.FC = () => {
                           {/* Add Block Bar */}
                           <div className="sticky bottom-8 flex justify-center mt-8">
                             <div className="bg-[#0A0A0A]/90 backdrop-blur-xl border border-white/10 rounded-full p-2 flex items-center gap-2 shadow-2xl">
-                              <button onClick={handleSmartPaste} className="px-4 py-2 rounded-full bg-authomia-blue/10 text-authomia-blueLight hover:bg-authomia-blue hover:text-white transition-all text-xs font-mono uppercase flex items-center gap-2">
+                              <button onClick={() => setShowSmartPaste(true)} className="px-4 py-2 rounded-full bg-authomia-blue/10 text-authomia-blueLight hover:bg-authomia-blue hover:text-white transition-all text-xs font-mono uppercase flex items-center gap-2">
                                 <Code size={14} /> Smart Paste
                               </button>
                               <div className="w-[1px] h-6 bg-white/10 mx-2" />
@@ -1049,34 +1090,43 @@ const Manager: React.FC = () => {
                    </button>
                 </div>
                 
-                <div className="bg-[#0A0A0A] border border-white/5 rounded-xl overflow-hidden">
+                {/* MIFO SECTION */}
+                <div className="bg-[#0A0A0A] border border-white/5 rounded-xl overflow-hidden mb-8">
+                   <div className="p-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
+                      <h3 className="font-bold text-white">MIFO (Magnet Lead)</h3>
+                      <span className="text-xs font-mono text-white/40">{materials.find(m => m.title === 'MIFO')?.leads.length || 0} Leads</span>
+                   </div>
                    <table className="w-full text-left border-collapse">
                       <thead>
                          <tr className="border-b border-white/10 bg-white/5">
                             <th className="p-4 text-xs font-mono text-white/50 uppercase tracking-widest font-normal">Email del Lead</th>
                             <th className="p-4 text-xs font-mono text-white/50 uppercase tracking-widest font-normal">Fecha de Descarga</th>
-                            <th className="p-4 text-xs font-mono text-white/50 uppercase tracking-widest font-normal">Material</th>
                             <th className="p-4 text-xs font-mono text-white/50 uppercase tracking-widest font-normal text-right">Acciones</th>
                          </tr>
                       </thead>
                       <tbody>
-                         {materials.flatMap(m => m.leads.map((l, i) => (
-                            <tr key={`${m.id}-${i}`} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                         {materials.find(m => m.title === 'MIFO')?.leads.map((l, i) => (
+                            <tr key={`mifo-${i}`} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                                <td className="p-4 text-sm text-white">{l.email}</td>
                                <td className="p-4 text-sm text-white/60">{new Date(l.date).toLocaleDateString()}</td>
-                               <td className="p-4 text-sm text-white/60">{m.title}</td>
                                <td className="p-4 text-right">
                                   <button className="text-xs font-mono text-authomia-blueLight hover:underline">Ver Detalles</button>
                                </td>
                             </tr>
-                         )))}
-                         {materials.length === 0 && (
+                         ))}
+                         {(!materials.find(m => m.title === 'MIFO') || materials.find(m => m.title === 'MIFO')?.leads.length === 0) && (
                             <tr>
-                               <td colSpan={4} className="p-8 text-center text-white/40 font-mono text-xs">No hay leads registrados aún.</td>
+                               <td colSpan={3} className="p-8 text-center text-white/40 font-mono text-xs">No hay leads registrados para MIFO.</td>
                             </tr>
                          )}
                       </tbody>
                    </table>
+                </div>
+
+                {/* OTHER MATERIALS (Placeholder for future) */}
+                <div className="border border-dashed border-white/10 rounded-xl p-8 text-center">
+                   <p className="text-white/40 font-mono text-xs uppercase tracking-widest">Próximamente: Nuevos Materiales</p>
+                   <p className="text-white/20 text-xs mt-2">Se añadirán nuevas secciones con asistencia técnica.</p>
                 </div>
              </div>
           )}
@@ -1086,47 +1136,115 @@ const Manager: React.FC = () => {
              <div className="space-y-8">
                 <div className="flex justify-between items-center mb-8">
                    <div>
-                      <h2 className="text-2xl font-light text-white">Postulantes (Join the Team)</h2>
-                      <p className="text-xs text-white/40 font-mono uppercase tracking-widest mt-1">Solicitudes de ingreso al equipo técnico</p>
+                      <h2 className="text-2xl font-light text-white">Postulantes & Solicitudes</h2>
+                      <p className="text-xs text-white/40 font-mono uppercase tracking-widest mt-1">Gestión de talento y autores invitados</p>
                    </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                    {applications.map(app => (
-                      <div key={app.id} className="bg-[#0A0A0A] border border-white/5 p-6 rounded-xl relative overflow-hidden group">
-                         <div className="absolute top-0 left-0 w-full h-1 bg-authomia-blueLight" />
-                         <h3 className="font-bold text-lg text-white mb-1">{app.name}</h3>
+                      <div key={app.id} className="bg-[#0A0A0A] border border-white/5 p-6 rounded-xl relative overflow-hidden group hover:border-white/20 transition-all">
+                         <div className={`absolute top-0 left-0 w-full h-1 ${app.type === 'team' ? 'bg-authomia-blueLight' : 'bg-green-500'}`} />
+                         
+                         <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-bold text-lg text-white">{app.name}</h3>
+                            <span className={`text-[10px] font-mono uppercase px-2 py-1 rounded ${
+                               app.status === 'approved' ? 'bg-green-500/20 text-green-400' : 
+                               app.status === 'rejected' ? 'bg-red-500/20 text-red-400' : 
+                               'bg-yellow-500/20 text-yellow-400'
+                            }`}>
+                               {app.status || 'pending'}
+                            </span>
+                         </div>
+                         
                          <a href={`mailto:${app.email}`} className="text-xs font-mono text-authomia-blueLight hover:underline mb-4 block">{app.email}</a>
                          
                          <div className="space-y-4">
+                            <div className="flex gap-2 mb-2">
+                               <span className={`text-[10px] font-mono uppercase px-2 py-1 rounded border border-white/10 ${app.type === 'team' ? 'text-authomia-blueLight' : 'text-green-400'}`}>
+                                  {app.type === 'team' ? 'Equipo' : 'Invitado'}
+                               </span>
+                               <span className="text-[10px] font-mono uppercase px-2 py-1 rounded border border-white/10 text-white/50">
+                                  {app.source || 'Unknown'}
+                               </span>
+                            </div>
+
                             <div>
                                <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest block mb-1">Especialidad</span>
                                <p className="text-sm text-white/80">{app.specialty}</p>
                             </div>
-                            <div>
-                               <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest block mb-1">Proyectos Previos</span>
-                               <p className="text-sm text-white/60 line-clamp-3">{app.pastProjects}</p>
-                            </div>
-                            {app.cvUrl && (
-                               <a href={app.cvUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs font-mono text-white bg-white/10 px-3 py-2 rounded hover:bg-white/20 transition-colors">
-                                  <ExternalLink size={12} /> Ver CV
-                               </a>
+                            
+                            {app.message ? (
+                               <div>
+                                  <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest block mb-1">Mensaje</span>
+                                  <p className="text-sm text-white/60 line-clamp-3" title={app.message}>{app.message}</p>
+                               </div>
+                            ) : (
+                               <div>
+                                  <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest block mb-1">Proyectos Previos</span>
+                                  <p className="text-sm text-white/60 line-clamp-3">{app.pastProjects}</p>
+                               </div>
                             )}
+
+                            <div className="flex gap-2 mt-2">
+                               {app.cvUrl && (
+                                  <a href={app.cvUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs font-mono text-white bg-white/10 px-3 py-2 rounded hover:bg-white/20 transition-colors">
+                                     <ExternalLink size={12} /> CV
+                                  </a>
+                               )}
+                               {app.socialUrl && (
+                                  <a href={app.socialUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs font-mono text-white bg-white/10 px-3 py-2 rounded hover:bg-white/20 transition-colors">
+                                     <ExternalLink size={12} /> Social
+                                  </a>
+                               )}
+                            </div>
                          </div>
+
                          <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center">
                             <span className="text-[10px] font-mono text-white/30">{new Date(app.date).toLocaleDateString()}</span>
-                            <button onClick={() => {
-                               if(confirm('¿Eliminar postulación?')) {
-                                  const newApps = applications.filter(a => a.id !== app.id);
-                                  saveToStorage('applications', newApps, setApplications);
-                               }
-                            }} className="text-white/20 hover:text-red-500"><Trash2 size={14}/></button>
+                            <div className="flex gap-2">
+                               <button onClick={async () => {
+                                  if (app._isFirestoreCollection) {
+                                     try {
+                                        await updateDoc(doc(db, 'writer_applications', app.id), { status: 'approved' });
+                                        setApplications(prev => prev.map(a => a.id === app.id ? { ...a, status: 'approved' } : a));
+                                        logAction('aprobó solicitud', app.name);
+                                     } catch (e) {
+                                        console.error("Error updating doc", e);
+                                        alert("Error al actualizar estado");
+                                     }
+                                  } else {
+                                     const newApps = applications.map(a => a.id === app.id ? { ...a, status: 'approved' as const } : a);
+                                     saveToStorage('applications', newApps, setApplications);
+                                     logAction('aprobó solicitud', app.name);
+                                  }
+                               }} className="text-white/20 hover:text-green-500" title="Aprobar"><CheckCircle2 size={14}/></button>
+                               
+                               <button onClick={async () => {
+                                  if(confirm('¿Eliminar/Rechazar solicitud?')) {
+                                     if (app._isFirestoreCollection) {
+                                        try {
+                                           await deleteDoc(doc(db, 'writer_applications', app.id));
+                                           setApplications(prev => prev.filter(a => a.id !== app.id));
+                                           logAction('eliminó solicitud', app.name);
+                                        } catch (e) {
+                                           console.error("Error deleting doc", e);
+                                           alert("Error al eliminar");
+                                        }
+                                     } else {
+                                        const newApps = applications.filter(a => a.id !== app.id);
+                                        saveToStorage('applications', newApps, setApplications);
+                                        logAction('eliminó solicitud', app.name);
+                                     }
+                                  }
+                               }} className="text-white/20 hover:text-red-500" title="Eliminar"><Trash2 size={14}/></button>
+                            </div>
                          </div>
                       </div>
                    ))}
                    {applications.length === 0 && (
                       <div className="col-span-full text-center py-20 text-white/40 font-mono text-sm">
-                         No hay postulaciones pendientes.
+                         No hay solicitudes pendientes.
                       </div>
                    )}
                 </div>
@@ -1168,6 +1286,12 @@ const Manager: React.FC = () => {
                                   </span>
                                </td>
                                <td className="p-4 text-right">
+                                  <button onClick={() => {
+                                     const newMembers = teamMembers.map(m => m.id === member.id ? { ...m, active: m.active === false ? true : false } : m);
+                                     saveToStorage('team', newMembers, setTeamMembers);
+                                  }} className={`mr-4 hover:scale-110 transition-transform ${member.active === false ? 'text-red-500/50 hover:text-red-500' : 'text-green-500/50 hover:text-green-500'}`} title={member.active === false ? "Activar Acceso" : "Desactivar Acceso"}>
+                                     {member.active === false ? <X size={14} /> : <CheckCircle2 size={14} />}
+                                  </button>
                                   <button onClick={() => setEditingTeamMember(member)} className="text-white/40 hover:text-white mr-4"><Edit2 size={14}/></button>
                                   <button onClick={() => {
                                      if(confirm('¿Eliminar miembro?')) {
@@ -1331,6 +1455,71 @@ const Manager: React.FC = () => {
 
         </div>
       </main>
+      {/* SMART PASTE MODAL */}
+      <AnimatePresence>
+        {showSmartPaste && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.9, opacity: 0 }} 
+              className="bg-[#0A0A0A] border border-white/10 rounded-xl w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl"
+            >
+              <div className="flex justify-between items-center p-6 border-b border-white/10">
+                <h3 className="text-xl font-light text-white flex items-center gap-2">
+                  <Code size={20} className="text-authomia-blueLight" /> 
+                  Smart Paste Engine
+                </h3>
+                <button onClick={() => setShowSmartPaste(false)} className="text-white/40 hover:text-white transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="flex-1 p-6 flex flex-col gap-4">
+                <div className="bg-authomia-blue/5 border border-authomia-blue/20 p-4 rounded-lg text-xs text-authomia-blueLight font-mono leading-relaxed">
+                  <p className="mb-2 font-bold uppercase">Supported Syntax:</p>
+                  <ul className="grid grid-cols-2 gap-2">
+                    <li># Heading 1</li>
+                    <li>## Heading 2</li>
+                    <li>### Heading 3</li>
+                    <li>&gt; Blockquote</li>
+                    <li>--- Divider</li>
+                    <li>``` Code Block ```</li>
+                    <li>![Alt](Image URL)</li>
+                    <li>Plain text (paragraphs separated by empty lines)</li>
+                  </ul>
+                </div>
+                <textarea 
+                  className="flex-1 w-full bg-[#050505] border border-white/10 rounded-lg p-6 text-white/80 font-mono text-sm outline-none focus:border-authomia-blueLight transition-colors resize-none leading-relaxed"
+                  placeholder="# Paste your markdown content here...&#10;&#10;It will be automatically parsed into blocks."
+                  value={smartPasteContent}
+                  onChange={(e) => setSmartPasteContent(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div className="p-6 border-t border-white/10 flex justify-end gap-4">
+                <button onClick={() => setShowSmartPaste(false)} className="px-6 py-3 rounded-lg text-xs font-mono uppercase tracking-widest text-white/60 hover:text-white transition-colors">
+                  Cancel
+                </button>
+                <button 
+                  onClick={processSmartPaste}
+                  disabled={!smartPasteContent.trim()}
+                  className="px-8 py-3 bg-white text-black rounded-lg text-xs font-mono uppercase tracking-widest hover:bg-authomia-blueLight hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  Process & Append <ArrowRight size={14} />
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Calendar, ArrowRight, Lock, ImageOff, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Calendar, ArrowRight, Lock, ImageOff, ChevronDown, X, Send, CheckCircle2 } from 'lucide-react';
 import { LOGO_ICON_URL } from '../constants';
 import { db } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
 
 interface PublicationBlock {
   type: 'text' | 'image' | 'button' | 'heading' | 'h2' | 'h3' | 'h4' | 'quote' | 'divider' | 'video';
@@ -44,6 +44,33 @@ const Publications: React.FC = () => {
   
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Writer Application State
+  const [showWriterForm, setShowWriterForm] = useState(false);
+  const [writerFormData, setWriterFormData] = useState({ name: '', email: '', specialty: '', type: 'guest', message: '' });
+  const [writerFormStatus, setWriterFormStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+
+  const handleWriterSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setWriterFormStatus('submitting');
+      try {
+          await addDoc(collection(db, 'writer_applications'), {
+              ...writerFormData,
+              createdAt: new Date(),
+              status: 'pending',
+              source: 'Authomia Publications'
+          });
+          setWriterFormStatus('success');
+          setTimeout(() => {
+              setWriterFormStatus('idle');
+              setShowWriterForm(false);
+              setWriterFormData({ name: '', email: '', specialty: '', type: 'guest', message: '' });
+          }, 3000);
+      } catch (error) {
+          console.error("Error submitting form", error);
+          setWriterFormStatus('error');
+      }
+  };
 
   // Extract slug from URL if present
   const pathParts = window.location.pathname.split('/').filter(Boolean);
@@ -359,6 +386,23 @@ const Publications: React.FC = () => {
                      )}
                   </div>
                )})}
+               
+               {/* WRITER CTA */}
+               <div className="mt-16 pt-8 border-t border-white/10">
+                  <div className="bg-[#0A0A0A] border border-white/5 p-8 rounded-xl text-center relative overflow-hidden group">
+                     <div className="absolute inset-0 bg-gradient-to-r from-authomia-blue/10 via-transparent to-authomia-blue/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                     <h3 className="text-2xl font-light text-white mb-2 relative z-10">¿Tienes algo que compartir?</h3>
+                     <p className="text-white/60 font-mono text-xs mb-6 max-w-md mx-auto relative z-10">
+                        Únete a nuestra red de autores invitados o postula para formar parte del equipo técnico de Authomia.
+                     </p>
+                     <button 
+                        onClick={() => setShowWriterForm(true)}
+                        className="relative z-10 bg-white text-black px-8 py-3 rounded-full font-mono text-xs uppercase tracking-widest hover:bg-authomia-blueLight hover:text-white transition-all shadow-lg hover:shadow-authomia-blue/20"
+                     >
+                        Escribir en Authomia
+                     </button>
+                  </div>
+               </div>
             </div>
           </div>
 
@@ -389,6 +433,76 @@ const Publications: React.FC = () => {
           </div>
 
         </div>
+
+        {/* WRITER FORM MODAL */}
+        <AnimatePresence>
+           {showWriterForm && (
+              <motion.div 
+                 initial={{ opacity: 0 }}
+                 animate={{ opacity: 1 }}
+                 exit={{ opacity: 0 }}
+                 className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6"
+              >
+                 <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    className="bg-[#0A0A0A] border border-white/10 w-full max-w-lg rounded-xl p-8 shadow-2xl relative"
+                 >
+                    <button onClick={() => setShowWriterForm(false)} className="absolute top-4 right-4 text-white/40 hover:text-white"><X size={20} /></button>
+                    
+                    {writerFormStatus === 'success' ? (
+                       <div className="text-center py-12">
+                          <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                             <CheckCircle2 className="text-green-500 w-8 h-8" />
+                          </div>
+                          <h3 className="text-2xl font-light text-white mb-4">¡Solicitud Enviada!</h3>
+                          <p className="text-white/60 font-mono text-sm">Gracias por tu interés. Revisaremos tu perfil y te contactaremos pronto.</p>
+                       </div>
+                    ) : (
+                       <form onSubmit={handleWriterSubmit} className="space-y-6">
+                          <div>
+                             <h3 className="text-xl font-light text-white mb-1">Escribir en Authomia</h3>
+                             <p className="text-xs text-white/40 font-mono uppercase tracking-widest">Únete a nuestra red de inteligencia</p>
+                          </div>
+                          
+                          <div className="space-y-4">
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest">Nombre Completo</label>
+                                <input required type="text" value={writerFormData.name} onChange={e => setWriterFormData({...writerFormData, name: e.target.value})} className="w-full bg-white/5 border border-white/10 p-3 rounded text-white text-sm outline-none focus:border-authomia-blueLight transition-colors" placeholder="Tu nombre" />
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest">Email Profesional</label>
+                                <input required type="email" value={writerFormData.email} onChange={e => setWriterFormData({...writerFormData, email: e.target.value})} className="w-full bg-white/5 border border-white/10 p-3 rounded text-white text-sm outline-none focus:border-authomia-blueLight transition-colors" placeholder="nombre@empresa.com" />
+                             </div>
+                             <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                   <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest">Especialidad</label>
+                                   <input required type="text" value={writerFormData.specialty} onChange={e => setWriterFormData({...writerFormData, specialty: e.target.value})} className="w-full bg-white/5 border border-white/10 p-3 rounded text-white text-sm outline-none focus:border-authomia-blueLight transition-colors" placeholder="Ej: AI, Cloud..." />
+                                </div>
+                                <div className="space-y-2">
+                                   <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest">Tipo</label>
+                                   <select value={writerFormData.type} onChange={e => setWriterFormData({...writerFormData, type: e.target.value})} className="w-full bg-white/5 border border-white/10 p-3 rounded text-white text-sm outline-none focus:border-authomia-blueLight transition-colors">
+                                      <option value="guest">Autor Invitado</option>
+                                      <option value="team">Equipo Técnico</option>
+                                   </select>
+                                </div>
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest">Mensaje / Propuesta</label>
+                                <textarea required value={writerFormData.message} onChange={e => setWriterFormData({...writerFormData, message: e.target.value})} className="w-full bg-white/5 border border-white/10 p-3 rounded text-white text-sm outline-none focus:border-authomia-blueLight transition-colors h-32 resize-none" placeholder="Cuéntanos sobre ti o tu idea de artículo..." />
+                             </div>
+                          </div>
+
+                          <button disabled={writerFormStatus === 'submitting'} type="submit" className="w-full bg-white text-black py-3 rounded font-mono text-xs uppercase tracking-widest hover:bg-authomia-blueLight hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                             {writerFormStatus === 'submitting' ? 'Enviando...' : <><Send size={14} /> Enviar Solicitud</>}
+                          </button>
+                       </form>
+                    )}
+                 </motion.div>
+              </motion.div>
+           )}
+        </AnimatePresence>
       </div>
     );
   }
