@@ -1,0 +1,92 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Since we are using a custom team management system stored in localStorage/Firestore,
+    // we need to verify if the user is part of the team.
+    // Assuming team members are stored in a 'team' collection.
+    function isTeamMember() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/team/$(request.auth.uid));
+    }
+
+    function getRole() {
+      return get(/databases/$(database)/documents/team/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isTeamMember() && getRole() == 'admin';
+    }
+
+    function isWriter() {
+      return isTeamMember() && getRole() == 'writer';
+    }
+
+    // Publications
+    match /publications/{pubId} {
+      allow read: if true; // Publicly readable
+      allow create: if isTeamMember();
+      allow update, delete: if isAdmin() || (isWriter() && resource.data.authorId == request.auth.uid);
+    }
+
+    // Publication Groups
+    match /publicationGroups/{groupId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Authors
+    match /authors/{authorId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Partners
+    match /partners/{partnerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Surveys
+    match /surveys/{surveyId} {
+      allow read: if true; // Publicly readable for taking the survey
+      allow write: if isAdmin();
+    }
+
+    // Survey Responses
+    match /surveyResponses/{responseId} {
+      allow create: if true; // Anyone can submit a response
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Materials
+    match /materials/{materialId} {
+      allow read: if true; // Publicly readable
+      allow write: if isAdmin();
+    }
+
+    // Material Leads
+    match /materialLeads/{leadId} {
+      allow create: if true; // Anyone can submit a lead form
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Team Members
+    match /team/{memberId} {
+      allow read: if isTeamMember();
+      allow write: if isAdmin();
+    }
+
+    // Action Logs
+    match /actionLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isTeamMember();
+      allow update, delete: if false; // Logs should be immutable
+    }
+  }
+}

@@ -254,10 +254,15 @@ const Publications: React.FC = () => {
             <button onClick={handleBackClick} className="mb-8 flex items-center gap-2 text-white/50 hover:text-white transition-colors text-xs font-mono uppercase tracking-widest">
               <ArrowLeft size={14} /> Volver
             </button>
-            <span className="text-authomia-blueLight font-mono text-xs uppercase tracking-widest mb-4 block">{selectedPub.date}</span>
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-light leading-tight max-w-4xl">{selectedPub.title}</h1>
+            <span className="text-authomia-blueLight font-mono text-xs uppercase tracking-widest mb-4 block">
+               {selectedPub.date}
+               {selectedPub.updatedDate && selectedPub.updatedDate !== selectedPub.date && (
+                  <span className="text-white/40 ml-2 border-l border-white/20 pl-2">Updated: {selectedPub.updatedDate}</span>
+               )}
+            </span>
+            <h1 className={`text-4xl md:text-6xl lg:text-7xl font-light leading-tight max-w-4xl text-${selectedPub.titleAlign || 'left'}`}>{selectedPub.title}</h1>
             {selectedPub.excerpt && (
-              <p className="mt-6 text-lg md:text-xl text-white/60 font-light max-w-3xl leading-relaxed">{selectedPub.excerpt}</p>
+               <p className={`mt-6 text-lg md:text-xl text-white/60 font-light max-w-3xl leading-relaxed text-${selectedPub.titleAlign || 'left'}`}>{selectedPub.excerpt}</p>
             )}
           </div>
         </div>
@@ -299,7 +304,7 @@ const Publications: React.FC = () => {
                      {block.type === 'h3' && <h4 id={blockId} className="text-xl md:text-2xl font-medium text-white/80 mb-3 mt-8 scroll-mt-32">{block.content}</h4>}
                      {block.type === 'h4' && <h5 id={blockId} className="text-lg md:text-xl font-medium text-white/70 mb-2 mt-6 scroll-mt-32">{block.content}</h5>}
                      
-                     {block.type === 'text' && <p className="text-lg text-white/70 font-light leading-relaxed whitespace-pre-line">{block.content}</p>}
+                     {block.type === 'text' && <p className="text-lg text-white/70 font-light leading-relaxed whitespace-pre-line text-justify">{block.content}</p>}
                      
                      {block.type === 'quote' && (
                         <blockquote className="border-l-2 border-authomia-blueLight pl-6 py-2 my-10 bg-white/[0.02] rounded-r-lg">

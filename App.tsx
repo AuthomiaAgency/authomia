@@ -23,8 +23,10 @@ import WhoWeArePage from './components/WhoWeArePage'; // NEW
 import ContactPage from './components/ContactPage'; // NEW
 import { CONTENT, LOGO_ICON_URL } from './constants';
 import { Language, LegalDocument } from './types';
-import { Shield, Lock, Eye, ArrowRight, Diamond, Linkedin, Facebook, Instagram, ChevronDown, X, MapPin, Mail, Phone } from 'lucide-react';
+import { Shield, Lock, Eye, ArrowRight, Diamond, Linkedin, Facebook, Instagram, ChevronDown, X, MapPin, Mail, Phone, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { db } from './lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const App: React.FC = () => {
   // ROUTING LOGIC
@@ -48,6 +50,33 @@ const App: React.FC = () => {
   const [targetPlan, setTargetPlan] = useState<'blue' | 'red' | null>(null);
 
   const [showToast, setShowToast] = useState(false);
+
+  // Join Team State
+  const [showJoinForm, setShowJoinForm] = useState(false);
+  const [joinTeamData, setJoinTeamData] = useState({ name: '', email: '', specialty: '', pastProjects: '', socialUrl: '' });
+  const [joinTeamStatus, setJoinTeamStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+
+  const handleJoinTeamSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setJoinTeamStatus('submitting');
+    try {
+      const appDoc = await getDoc(doc(db, 'appData', 'applications'));
+      const currentApps = appDoc.exists() ? appDoc.data().items || [] : [];
+      const newApp = {
+        id: Date.now().toString(),
+        ...joinTeamData,
+        date: new Date().toISOString()
+      };
+      await setDoc(doc(db, 'appData', 'applications'), { items: [...currentApps, newApp] });
+      setJoinTeamStatus('success');
+      setJoinTeamData({ name: '', email: '', specialty: '', pastProjects: '', socialUrl: '' });
+      setTimeout(() => setJoinTeamStatus('idle'), 5000);
+    } catch (err) {
+      console.error(err);
+      setJoinTeamStatus('error');
+      setTimeout(() => setJoinTeamStatus('idle'), 5000);
+    }
+  };
 
   useEffect(() => {
     document.documentElement.classList.add('scroll-smooth');
@@ -205,6 +234,89 @@ const App: React.FC = () => {
         </div>
       </section>
 
+      {/* 11. JOIN THE TEAM */}
+      <section className="py-24 px-6 bg-[#050505] relative overflow-hidden border-t border-white/5">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(10,16,158,0.05)_0%,transparent_50%)] pointer-events-none" />
+        <div className="max-w-4xl mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-light text-white mb-4">¿Quieres formar parte del equipo técnico de Authomia?</h2>
+            <p className="text-white/40 font-mono text-xs uppercase tracking-widest">Buscamos talento excepcional para proyectos de alto impacto.</p>
+          </div>
+
+          {!showJoinForm ? (
+             <div className="flex justify-center">
+                <button 
+                   onClick={() => setShowJoinForm(true)}
+                   className="group relative px-10 py-5 bg-transparent overflow-hidden rounded-full transition-all duration-500 hover:scale-105"
+                >
+                   {/* Animated Border */}
+                   <div className="absolute inset-0 rounded-full p-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50 group-hover:opacity-100 group-hover:animate-spin-slow" />
+                   <div className="absolute inset-[1px] bg-[#050505] rounded-full z-0" />
+                   
+                   {/* Glow Effect */}
+                   <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_0%,transparent_60%)] z-0" />
+                   
+                   {/* Text */}
+                   <span className="relative z-10 font-mono text-xs uppercase tracking-[0.3em] text-white/60 group-hover:text-white group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all duration-300">
+                      Aplicar Ahora
+                   </span>
+                </button>
+             </div>
+          ) : (
+             <motion.form 
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.5 }}
+               onSubmit={handleJoinTeamSubmit} 
+               className="bg-[#0A0A0A] border border-white/5 p-8 md:p-12 rounded-xl shadow-2xl space-y-6 relative"
+             >
+               <button 
+                  type="button" 
+                  onClick={() => setShowJoinForm(false)} 
+                  className="absolute top-4 right-4 text-white/20 hover:text-white transition-colors"
+               >
+                  <X size={20} />
+               </button>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="space-y-2">
+                   <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest ml-1">Nombre Completo</label>
+                   <input required type="text" value={joinTeamData.name} onChange={e => setJoinTeamData({...joinTeamData, name: e.target.value})} className="w-full bg-white/5 border border-white/10 p-4 rounded-lg text-white font-mono text-sm focus:border-authomia-blueLight focus:bg-white/10 outline-none transition-all" placeholder="John Doe" />
+                 </div>
+                 <div className="space-y-2">
+                   <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest ml-1">Correo Electrónico</label>
+                   <input required type="email" value={joinTeamData.email} onChange={e => setJoinTeamData({...joinTeamData, email: e.target.value})} className="w-full bg-white/5 border border-white/10 p-4 rounded-lg text-white font-mono text-sm focus:border-authomia-blueLight focus:bg-white/10 outline-none transition-all" placeholder="john@example.com" />
+                 </div>
+               </div>
+               <div className="space-y-2">
+                 <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest ml-1">Especialidad</label>
+                 <input required type="text" value={joinTeamData.specialty} onChange={e => setJoinTeamData({...joinTeamData, specialty: e.target.value})} className="w-full bg-white/5 border border-white/10 p-4 rounded-lg text-white font-mono text-sm focus:border-authomia-blueLight focus:bg-white/10 outline-none transition-all" placeholder="e.g. Full-Stack, IA, RPA, Diseño UI/UX" />
+               </div>
+               <div className="space-y-2">
+                 <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest ml-1">Proyectos en los que has trabajado</label>
+                 <textarea required value={joinTeamData.pastProjects} onChange={e => setJoinTeamData({...joinTeamData, pastProjects: e.target.value})} className="w-full bg-white/5 border border-white/10 p-4 rounded-lg text-white font-mono text-sm focus:border-authomia-blueLight focus:bg-white/10 outline-none transition-all resize-none h-32" placeholder="Describe brevemente tu experiencia..." />
+               </div>
+               <div className="space-y-2">
+                 <label className="text-[10px] font-mono text-white/30 uppercase tracking-widest ml-1">Red Social Profesional (LinkedIn, Behance, etc.)</label>
+                 <input type="url" value={joinTeamData.socialUrl} onChange={e => setJoinTeamData({...joinTeamData, socialUrl: e.target.value})} className="w-full bg-white/5 border border-white/10 p-4 rounded-lg text-white font-mono text-sm focus:border-authomia-blueLight focus:bg-white/10 outline-none transition-all" placeholder="https://linkedin.com/in/..." />
+               </div>
+
+               <div className="pt-6">
+                 <button 
+                   type="submit" 
+                   disabled={joinTeamStatus === 'submitting'}
+                   className="w-full bg-white text-black py-4 rounded-lg font-mono text-xs uppercase tracking-widest hover:bg-authomia-blueLight hover:text-white transition-all flex items-center justify-center gap-3 shadow-lg hover:shadow-authomia-blue/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                 >
+                   {joinTeamStatus === 'submitting' ? 'Enviando...' : joinTeamStatus === 'success' ? 'Enviado Correctamente' : 'Enviar Postulación'} 
+                   {joinTeamStatus === 'idle' && <Send size={14} />}
+                 </button>
+                 {joinTeamStatus === 'error' && <p className="text-red-400 text-xs text-center mt-4 font-mono">Hubo un error al enviar. Inténtalo de nuevo.</p>}
+               </div>
+             </motion.form>
+          )}
+        </div>
+      </section>
+
       {/* EXTENDED FOOTER */}
       <footer className="border-t border-white/5 bg-[#08090B] pt-20 pb-12 px-6 relative">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 mb-16">
@@ -228,11 +340,6 @@ const App: React.FC = () => {
                    </button>
                  </li>
                ))}
-               <li>
-                  <a href="/publicaciones" className="text-sm text-white/60 hover:text-authomia-blueLight transition-colors flex items-center gap-2">
-                    Publicaciones
-                  </a>
-               </li>
             </ul>
           </div>
 

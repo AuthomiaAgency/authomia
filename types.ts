@@ -25,7 +25,9 @@ export interface PublicationBlock {
 export interface Publication {
   id: string;
   title: string;
+  titleAlign?: 'left' | 'center' | 'right' | 'justify';
   date: string;
+  updatedDate?: string;
   coverImage: string;
   excerpt: string;
   blocks: PublicationBlock[];
