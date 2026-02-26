@@ -13,6 +13,12 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { db, auth } from '../lib/firebase';
 import { doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import TurndownService from 'turndown';
+
+const turndownService = new TurndownService({
+  headingStyle: 'atx',
+  codeBlockStyle: 'fenced'
+});
 
 // --- TYPES ---
 interface Partner {
@@ -294,6 +300,28 @@ const Manager: React.FC = () => {
 
   const [showSmartPaste, setShowSmartPaste] = useState(false);
   const [smartPasteContent, setSmartPasteContent] = useState('');
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const html = e.clipboardData.getData('text/html');
+    if (html) {
+      e.preventDefault();
+      const markdown = turndownService.turndown(html);
+      
+      // Insert markdown at cursor position
+      const target = e.target as HTMLTextAreaElement;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      const currentVal = target.value;
+      
+      const newVal = currentVal.substring(0, start) + markdown + currentVal.substring(end);
+      setSmartPasteContent(newVal);
+      
+      // Move cursor to end of inserted text
+      setTimeout(() => {
+        target.selectionStart = target.selectionEnd = start + markdown.length;
+      }, 0);
+    }
+  };
 
   // --- SMART PASTE ENGINE ---
   const processSmartPaste = () => {
@@ -1603,6 +1631,7 @@ const Manager: React.FC = () => {
                   placeholder="# Paste your markdown content here...&#10;&#10;It will be automatically parsed into blocks."
                   value={smartPasteContent}
                   onChange={(e) => setSmartPasteContent(e.target.value)}
+                  onPaste={handlePaste}
                   autoFocus
                 />
               </div>
