@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Lock, Save, Trash2, Plus, LogOut, FileText, Users, BarChart2, 
   ExternalLink, Link, Image as ImageIcon, Send, ArrowRight, Palette, 
@@ -13,12 +13,6 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { db, auth } from '../lib/firebase';
 import { doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
-import TurndownService from 'turndown';
-
-const turndownService = new TurndownService({
-  headingStyle: 'atx',
-  codeBlockStyle: 'fenced'
-});
 
 // --- TYPES ---
 interface Partner {
@@ -299,112 +293,62 @@ const Manager: React.FC = () => {
   };
 
   const [showSmartPaste, setShowSmartPaste] = useState(false);
-  const [smartPasteContent, setSmartPasteContent] = useState('');
-
-  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const html = e.clipboardData.getData('text/html');
-    if (html) {
-      e.preventDefault();
-      const markdown = turndownService.turndown(html);
-      
-      // Insert markdown at cursor position
-      const target = e.target as HTMLTextAreaElement;
-      const start = target.selectionStart;
-      const end = target.selectionEnd;
-      const currentVal = target.value;
-      
-      const newVal = currentVal.substring(0, start) + markdown + currentVal.substring(end);
-      setSmartPasteContent(newVal);
-      
-      // Move cursor to end of inserted text
-      setTimeout(() => {
-        target.selectionStart = target.selectionEnd = start + markdown.length;
-      }, 0);
-    }
-  };
+  const smartPasteRef = useRef<HTMLDivElement>(null);
 
   // --- SMART PASTE ENGINE ---
   const processSmartPaste = () => {
-    if (!smartPasteContent) return;
+    if (!smartPasteRef.current) return;
 
     const newBlocks: PublicationBlock[] = [];
-    const lines = smartPasteContent.split('\n');
-    let inCodeBlock = false;
-    let codeContent = '';
-    let currentTextBlock = '';
+    const nodes = Array.from(smartPasteRef.current.childNodes);
 
-    const flushText = () => {
-       if (currentTextBlock.trim()) {
-          newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'text', content: currentTextBlock.trim() });
-          currentTextBlock = '';
-       }
-    };
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const trimmed = line.trim();
-      
-      // Code Block Detection
-      if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
-        if (inCodeBlock) {
-          // End of code block
-          newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'code', content: codeContent.trim() });
-          codeContent = '';
-          inCodeBlock = false;
-        } else {
-          // Start of code block
-          flushText();
-          inCodeBlock = true;
+    nodes.forEach(node => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent?.trim();
+        if (text) {
+           newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'text', content: `<p>${text}</p>` });
         }
-        continue;
+        return;
       }
 
-      if (inCodeBlock) {
-        codeContent += line + '\n';
-        continue;
+      const el = node as HTMLElement;
+      const tagName = el.tagName?.toUpperCase();
+
+      if (!tagName) return;
+
+      if (tagName === 'H1') {
+        newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'heading', content: el.textContent || '' });
+      } else if (tagName === 'H2') {
+        newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h2', content: el.textContent || '' });
+      } else if (tagName === 'H3') {
+        newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h3', content: el.textContent || '' });
+      } else if (tagName === 'H4' || tagName === 'H5' || tagName === 'H6') {
+        newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h4', content: el.textContent || '' });
+      } else if (tagName === 'IMG') {
+        newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'image', content: (el as HTMLImageElement).src });
+      } else if (tagName === 'BLOCKQUOTE') {
+        newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'quote', content: el.textContent || '' });
+      } else if (tagName === 'HR') {
+        newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'divider', content: '' });
+      } else {
+        const html = el.outerHTML;
+        if (html && el.textContent?.trim()) {
+           newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'text', content: html });
+        } else if (tagName === 'BR') {
+           // ignore standalone BRs
+        } else if (el.querySelector('img')) {
+           // Extract images inside divs/ps
+           const imgs = el.querySelectorAll('img');
+           imgs.forEach(img => {
+              newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'image', content: img.src });
+           });
+        }
       }
-
-      // Alternative Headings (Title \n === or ---)
-      if (i + 1 < lines.length && trimmed.length > 0) {
-         const nextLine = lines[i + 1].trim();
-         if (nextLine.match(/^={3,}$/)) {
-            flushText();
-            newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'heading', content: trimmed });
-            i++; // skip the === line
-            continue;
-         }
-         if (nextLine.match(/^-{3,}$/) && !trimmed.match(/^\|.*\|$/)) { // Ensure it's not a table header
-            flushText();
-            newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h2', content: trimmed });
-            i++; // skip the --- line
-            continue;
-         }
-      }
-
-      // Standard Headings
-      if (trimmed.match(/^#\s+(.*)/)) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'heading', content: trimmed.replace(/^#\s+/, '') }); continue; }
-      if (trimmed.match(/^##\s+(.*)/)) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h2', content: trimmed.replace(/^##\s+/, '') }); continue; }
-      if (trimmed.match(/^###\s+(.*)/)) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h3', content: trimmed.replace(/^###\s+/, '') }); continue; }
-      if (trimmed.match(/^####\s+(.*)/)) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h4', content: trimmed.replace(/^####\s+/, '') }); continue; }
-      if (trimmed.match(/^#####+\s+(.*)/)) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'h4', content: trimmed.replace(/^#####+\s+/, '') }); continue; } // Map H5/H6 to H4 block
-      
-      // Dividers
-      if (trimmed.match(/^(\*\*\*|---|___)$/)) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'divider', content: '' }); continue; }
-
-      // Images (only if they are the only thing on the line)
-      const imgMatch = trimmed.match(/^!\[.*?\]\((.*?)\)$/);
-      if (imgMatch) { flushText(); newBlocks.push({ id: Date.now() + Math.random().toString(), type: 'image', content: imgMatch[1] }); continue; }
-
-      // Everything else goes into the current text block.
-      // This allows react-markdown to natively handle lists, tables, blockquotes, math, bold, italic, etc.
-      currentTextBlock += (currentTextBlock ? '\n' : '') + line;
-    }
-    flushText();
+    });
 
     if (editingPub) {
       setEditingPub({ ...editingPub, blocks: [...editingPub.blocks, ...newBlocks] });
     }
-    setSmartPasteContent('');
     setShowSmartPaste(false);
   };
 
@@ -781,19 +725,16 @@ const Manager: React.FC = () => {
                               {block.type === 'h4' && <input className="w-full bg-transparent text-lg font-medium text-white outline-none placeholder-white/20" value={block.content} onChange={e => { const newBlocks = [...editingPub.blocks]; newBlocks[idx].content = e.target.value; setEditingPub({...editingPub, blocks: newBlocks}); }} placeholder="Heading 4" autoFocus />}
                               
                               {block.type === 'text' && (
-                                <textarea 
-                                  className="w-full bg-transparent text-base text-white/80 leading-relaxed outline-none resize-none overflow-hidden text-justify" 
-                                  value={block.content} 
-                                  onChange={e => { 
+                                <div 
+                                  contentEditable 
+                                  suppressContentEditableWarning
+                                  className="w-full bg-white/5 text-base text-white/90 leading-relaxed outline-none rounded p-4 transition-colors focus:bg-white/10 break-words"
+                                  dangerouslySetInnerHTML={{ __html: block.content }}
+                                  onBlur={e => { 
                                     const newBlocks = [...editingPub.blocks]; 
-                                    newBlocks[idx].content = e.target.value; 
-                                    e.target.style.height = 'auto';
-                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                    newBlocks[idx].content = e.currentTarget.innerHTML; 
                                     setEditingPub({...editingPub, blocks: newBlocks}); 
-                                  }} 
-                                  placeholder="Type something..." 
-                                  rows={1}
-                                  style={{ height: 'auto' }}
+                                  }}
                                 />
                               )}
 
@@ -1614,25 +1555,16 @@ const Manager: React.FC = () => {
               
               <div className="flex-1 p-6 flex flex-col gap-4">
                 <div className="bg-authomia-blue/5 border border-authomia-blue/20 p-4 rounded-lg text-xs text-authomia-blueLight font-mono leading-relaxed">
-                  <p className="mb-2 font-bold uppercase">Supported Syntax:</p>
-                  <ul className="grid grid-cols-2 gap-2">
-                    <li># Heading 1</li>
-                    <li>## Heading 2</li>
-                    <li>### Heading 3</li>
-                    <li>&gt; Blockquote</li>
-                    <li>--- Divider</li>
-                    <li>``` Code Block ```</li>
-                    <li>![Alt](Image URL)</li>
-                    <li>Plain text (paragraphs separated by empty lines)</li>
-                  </ul>
+                  <p className="mb-2 font-bold uppercase">Instrucciones:</p>
+                  <p>Copia el contenido directamente desde tu documento (Word, Google Docs, Notion, Web) y pégalo abajo. El sistema detectará automáticamente los títulos, negritas, cursivas, listas, imágenes y enlaces, conservando el formato original.</p>
                 </div>
-                <textarea 
-                  className="flex-1 w-full bg-[#050505] border border-white/10 rounded-lg p-6 text-white/80 font-mono text-sm outline-none focus:border-authomia-blueLight transition-colors resize-none leading-relaxed"
-                  placeholder="# Paste your markdown content here...&#10;&#10;It will be automatically parsed into blocks."
-                  value={smartPasteContent}
-                  onChange={(e) => setSmartPasteContent(e.target.value)}
-                  onPaste={handlePaste}
-                  autoFocus
+                <div 
+                  ref={smartPasteRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="flex-1 w-full bg-white text-black border border-gray-300 rounded-lg p-12 shadow-inner outline-none focus:ring-2 ring-authomia-blueLight transition-all overflow-y-auto break-words prose max-w-none"
+                  style={{ minHeight: '500px' }}
+                  data-placeholder="Pega tu documento aquí (Word, Docs, Web)..."
                 />
               </div>
 
@@ -1642,8 +1574,7 @@ const Manager: React.FC = () => {
                 </button>
                 <button 
                   onClick={processSmartPaste}
-                  disabled={!smartPasteContent.trim()}
-                  className="px-8 py-3 bg-white text-black rounded-lg text-xs font-mono uppercase tracking-widest hover:bg-authomia-blueLight hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-8 py-3 bg-white text-black rounded-lg text-xs font-mono uppercase tracking-widest hover:bg-authomia-blueLight hover:text-white transition-all flex items-center gap-2"
                 >
                   Process & Append <ArrowRight size={14} />
                 </button>

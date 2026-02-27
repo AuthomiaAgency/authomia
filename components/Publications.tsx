@@ -4,12 +4,6 @@ import { ArrowLeft, Calendar, ArrowRight, Lock, ImageOff, ChevronDown, X, Send, 
 import { LOGO_ICON_URL } from '../constants';
 import { db } from '../lib/firebase';
 import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
 
 interface PublicationBlock {
   type: 'text' | 'image' | 'button' | 'heading' | 'h2' | 'h3' | 'h4' | 'quote' | 'divider' | 'video';
@@ -327,38 +321,34 @@ const Publications: React.FC = () => {
 
           {/* Center Column: Main Content */}
           <div className="lg:col-span-6">
-            <div className="space-y-8">
+            <div className="bg-white text-black p-8 sm:p-12 md:p-16 rounded-xl shadow-2xl w-full mx-auto break-words" style={{ minHeight: '1056px' }}>
                {selectedPub.blocks.map((block, idx) => {
                   const blockId = `heading-${idx}`;
                   return (
                   <div key={idx}>
-                     {block.type === 'heading' && <h2 id={blockId} className="text-3xl md:text-4xl font-light text-white mb-6 mt-12 scroll-mt-32">{block.content}</h2>}
-                     {block.type === 'h2' && <h3 id={blockId} className="text-2xl md:text-3xl font-medium text-white/90 mb-4 mt-10 scroll-mt-32">{block.content}</h3>}
-                     {block.type === 'h3' && <h4 id={blockId} className="text-xl md:text-2xl font-medium text-white/80 mb-3 mt-8 scroll-mt-32">{block.content}</h4>}
-                     {block.type === 'h4' && <h5 id={blockId} className="text-lg md:text-xl font-medium text-white/70 mb-2 mt-6 scroll-mt-32">{block.content}</h5>}
+                     {block.type === 'heading' && <h2 id={blockId} className="text-3xl md:text-4xl font-bold text-black mb-8 mt-16 leading-tight tracking-tight scroll-mt-32">{block.content}</h2>}
+                     {block.type === 'h2' && <h3 id={blockId} className="text-2xl md:text-3xl font-semibold text-gray-900 mb-6 mt-12 leading-tight scroll-mt-32">{block.content}</h3>}
+                     {block.type === 'h3' && <h4 id={blockId} className="text-xl md:text-2xl font-medium text-gray-800 mb-4 mt-8 leading-snug scroll-mt-32">{block.content}</h4>}
+                     {block.type === 'h4' && <h5 id={blockId} className="text-lg md:text-xl font-medium text-gray-700 mb-4 mt-6 leading-snug scroll-mt-32">{block.content}</h5>}
                      
                      {block.type === 'text' && (
-                        <div className="prose prose-invert prose-lg max-w-none text-white/70 font-light leading-relaxed text-justify prose-p:mb-6 prose-a:text-authomia-blueLight prose-a:no-underline hover:prose-a:underline prose-strong:text-white prose-strong:font-medium prose-code:text-authomia-blueLight prose-code:bg-authomia-blue/10 prose-code:px-1 prose-code:rounded prose-pre:bg-[#0A0A0A] prose-pre:border prose-pre:border-white/10 prose-blockquote:border-l-authomia-blueLight prose-blockquote:bg-white/[0.02] prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:not-italic prose-blockquote:text-white/90 prose-ul:list-disc prose-ol:list-decimal prose-li:marker:text-authomia-blueLight prose-table:border-collapse prose-th:border prose-th:border-white/20 prose-th:p-2 prose-td:border prose-td:border-white/10 prose-td:p-2 prose-hr:border-white/10 prose-img:rounded-lg prose-img:border prose-img:border-white/10">
-                           <ReactMarkdown 
-                              remarkPlugins={[remarkGfm, remarkMath]} 
-                              rehypePlugins={[rehypeRaw, rehypeKatex]}
-                           >
-                              {block.content}
-                           </ReactMarkdown>
-                        </div>
+                        <div 
+                           className="text-lg text-gray-800 font-light leading-relaxed text-justify mb-6 prose-p:mb-4 prose-a:text-authomia-blue prose-a:underline hover:prose-a:text-authomia-blueLight prose-strong:font-bold prose-ul:list-disc prose-ul:ml-6 prose-ul:mb-4 prose-ol:list-decimal prose-ol:ml-6 prose-ol:mb-4 prose-li:mb-2 prose-table:w-full prose-table:border-collapse prose-table:mb-6 prose-th:border prose-th:border-gray-300 prose-th:p-3 prose-th:bg-gray-50 prose-td:border prose-td:border-gray-300 prose-td:p-3"
+                           dangerouslySetInnerHTML={{ __html: block.content }}
+                        />
                      )}
                      
                      {block.type === 'quote' && (
-                        <blockquote className="border-l-2 border-authomia-blueLight pl-6 py-2 my-10 bg-white/[0.02] rounded-r-lg">
-                           <p className="text-xl md:text-2xl font-light italic text-white/90 leading-relaxed">"{block.content}"</p>
-                           {block.extra && <footer className="text-sm font-mono text-white/50 mt-4 uppercase tracking-widest">— {block.extra}</footer>}
+                        <blockquote className="border-l-4 border-authomia-blue pl-6 py-2 my-10 bg-gray-50 rounded-r-lg">
+                           <p className="text-xl md:text-2xl font-light italic text-gray-700 leading-relaxed">"{block.content}"</p>
+                           {block.extra && <footer className="text-sm font-mono text-gray-500 mt-4 uppercase tracking-widest">— {block.extra}</footer>}
                         </blockquote>
                      )}
                      
-                     {block.type === 'divider' && <hr className="border-white/10 my-12" />}
+                     {block.type === 'divider' && <hr className="border-gray-200 my-12" />}
                      
                      {block.type === 'image' && (
-                        <div className="rounded-lg border border-white/10 overflow-hidden bg-[#08090B] my-10 shadow-2xl">
+                        <div className="rounded-lg border border-gray-200 overflow-hidden bg-gray-50 my-10 shadow-lg">
                            <img 
                              src={block.content} 
                              className="w-full h-auto object-cover" 
@@ -369,7 +359,7 @@ const Publications: React.FC = () => {
                      )}
                      
                      {block.type === 'video' && (
-                        <div className="rounded-lg border border-white/10 overflow-hidden bg-[#08090B] my-10 aspect-video relative shadow-2xl">
+                        <div className="rounded-lg border border-gray-200 overflow-hidden bg-gray-50 my-10 aspect-video relative shadow-lg">
                            <iframe 
                              src={block.content} 
                              className="absolute top-0 left-0 w-full h-full"
