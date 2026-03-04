@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Content } from '../types';
 import { Quote, Radio, MessageSquarePlus, Star, Facebook } from 'lucide-react';
@@ -8,6 +8,20 @@ interface TestimonialsProps {
 }
 
 const Testimonials: React.FC<TestimonialsProps> = ({ content }) => {
+  useEffect(() => {
+    // Load Elfsight script
+    const script = document.createElement('script');
+    script.src = 'https://elfsightcdn.com/platform.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      // Optional cleanup if needed
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
   return (
     <section className="py-24 px-6 bg-[#030303] relative border-t border-white/5">
       <div className="max-w-4xl mx-auto text-center">
@@ -30,9 +44,9 @@ const Testimonials: React.FC<TestimonialsProps> = ({ content }) => {
            <div className="absolute top-0 left-0 w-full h-[1px] bg-white/10 animate-[scan_4s_linear_infinite]" />
 
            <div className="relative z-10 flex flex-col items-center gap-6">
-              {/* Trustindex Widget Space */}
+              {/* Elfsight Widget Space */}
               <div className="w-full max-w-4xl mx-auto mb-8 relative z-20 min-h-[200px] flex items-center justify-center">
-                 <div className="w-full" src='https://cdn.trustindex.io/loader.js?c1944fc653ab348af1969151da0'></div>
+                 <div className="elfsight-app-069bcaf7-54c1-4945-8f32-25bf2eb28cd8 w-full" data-elfsight-app-lazy></div>
               </div>
 
               <div className="flex flex-col md:flex-row gap-4">
