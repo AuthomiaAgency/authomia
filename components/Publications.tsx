@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, ArrowRight, Lock, ImageOff, ChevronDown, X, Send, 
 import { LOGO_ICON_URL } from '../constants';
 import { db } from '../lib/firebase';
 import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
+import DOMPurify from 'dompurify';
 
 interface PublicationBlock {
   type: 'text' | 'image' | 'button' | 'heading' | 'h2' | 'h3' | 'h4' | 'quote' | 'divider' | 'video';
@@ -334,7 +335,7 @@ const Publications: React.FC = () => {
                      {block.type === 'text' && (
                         <div 
                            className="text-lg text-gray-800 font-light leading-relaxed text-justify mb-6 prose-p:mb-4 prose-a:text-authomia-blue prose-a:underline hover:prose-a:text-authomia-blueLight prose-strong:font-bold prose-ul:list-disc prose-ul:ml-6 prose-ul:mb-4 prose-ol:list-decimal prose-ol:ml-6 prose-ol:mb-4 prose-li:mb-2 prose-table:w-full prose-table:border-collapse prose-table:mb-6 prose-th:border prose-th:border-gray-300 prose-th:p-3 prose-th:bg-gray-50 prose-td:border prose-td:border-gray-300 prose-td:p-3"
-                           dangerouslySetInnerHTML={{ __html: block.content }}
+                           dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(block.content) }}
                         />
                      )}
                      

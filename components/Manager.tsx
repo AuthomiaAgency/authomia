@@ -13,6 +13,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { db, auth } from '../lib/firebase';
 import { doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import DOMPurify from 'dompurify';
 
 // --- TYPES ---
 interface Partner {
@@ -378,19 +379,7 @@ const Manager: React.FC = () => {
               }
               setCurrentUser(adminUser);
             } catch(err) { 
-              // Fallback to Team Members (Socios)
-              const socio = teamMembers.find(m => m.email === email && m.password === password);
-              if (socio) {
-                if (socio.active === false) {
-                   setError('Acceso denegado. Tu cuenta ha sido desactivada.');
-                   return;
-                }
-                setIsAuthenticated(true);
-                setIsSocio(true);
-                setCurrentUser(socio);
-              } else {
-                setError('Invalid Credentials'); 
-              }
+              setError('Credenciales inválidas. Por favor, asegúrate de usar Firebase Auth.'); 
             } 
           }} className="space-y-6">
             <div className="space-y-2">
@@ -729,10 +718,10 @@ const Manager: React.FC = () => {
                                   contentEditable 
                                   suppressContentEditableWarning
                                   className="w-full bg-white/5 text-base text-white/90 leading-relaxed outline-none rounded p-4 transition-colors focus:bg-white/10 break-words"
-                                  dangerouslySetInnerHTML={{ __html: block.content }}
+                                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(block.content) }}
                                   onBlur={e => { 
                                     const newBlocks = [...editingPub.blocks]; 
-                                    newBlocks[idx].content = e.currentTarget.innerHTML; 
+                                    newBlocks[idx].content = DOMPurify.sanitize(e.currentTarget.innerHTML); 
                                     setEditingPub({...editingPub, blocks: newBlocks}); 
                                   }}
                                 />
@@ -1396,10 +1385,6 @@ const Manager: React.FC = () => {
                             <div className="space-y-2">
                                <label className="text-xs text-white/50 uppercase">Email</label>
                                <input className="w-full bg-white/5 border border-white/10 p-3 rounded text-white" placeholder="socio@ejemplo.com" value={editingTeamMember.email} onChange={e => setEditingTeamMember({...editingTeamMember, email: e.target.value})} />
-                            </div>
-                            <div className="space-y-2">
-                               <label className="text-xs text-white/50 uppercase">Contraseña</label>
-                               <input className="w-full bg-white/5 border border-white/10 p-3 rounded text-white" placeholder="Clave de acceso" value={editingTeamMember.password || ''} onChange={e => setEditingTeamMember({...editingTeamMember, password: e.target.value})} />
                             </div>
                             <div className="space-y-2">
                                <label className="text-xs text-white/50 uppercase">Rol</label>

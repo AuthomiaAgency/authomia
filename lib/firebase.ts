@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBa43RLBqnsyNCSLOjt_-wCmSI-WNTnedQ",
@@ -13,5 +14,21 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+
+// Inicialización de App Check (Seguridad contra Bots y Scraping)
+// NOTA: Reemplaza 'TU_CLAVE_DE_SITIO_RECAPTCHA_AQUI' con la clave que generes en Google Cloud
+let appCheck;
+if (typeof window !== "undefined") {
+  try {
+    appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider(6LcZX5IsAAAAAM8Wa4TtF0lELSabzFUKtrzGFZNW),
+      isTokenAutoRefreshEnabled: true
+    });
+  } catch (e) {
+    console.warn("App Check initialization failed or already initialized", e);
+  }
+}
+
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export { appCheck };
