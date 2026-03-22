@@ -21,7 +21,7 @@ let appCheck;
 if (typeof window !== "undefined") {
   try {
     appCheck = initializeAppCheck(app, {
-      provider: new ReCaptchaEnterpriseProvider(6LcZX5IsAAAAAM8Wa4TtF0lELSabzFUKtrzGFZNW),
+      provider: new ReCaptchaEnterpriseProvider('6LcZX5IsAAAAAM8Wa4TtF0lELSabzFUKtrzGFZNW'),
       isTokenAutoRefreshEnabled: true
     });
   } catch (e) {
