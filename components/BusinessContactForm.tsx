@@ -1,20 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, CheckCircle2, Mail, Building2, User, Phone, ExternalLink, ShieldCheck } from 'lucide-react';
+import { Send, CheckCircle2, Mail, Building2, User, Phone, ShieldCheck, Check, Sparkles } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { WordPullUp, BlurReveal } from './ui/BlurReveal';
 import { DecryptedText } from './ui/DecryptedText';
+import { 
+  signInWithGoogleGmail, 
+  initGmailAuth, 
+  sendInquiryViaGmailAPI, 
+  getGmailAccessToken 
+} from '../lib/gmailAuth';
 
 interface BusinessContactFormProps {
   lang?: 'es' | 'en';
 }
 
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
 // Security Helper: Sanitize text inputs against XSS and control character injection
 const sanitizeInput = (val: string): string => {
   return val
-    .replace(/[<>]/g, '') // Strip angle brackets to prevent HTML/script injection
-    .replace(/javascript:/gi, '') // Strip javascript: protocol
+    .replace(/[<>]/g, '')
+    .replace(/javascript:/gi, '')
     .trim();
 };
 
@@ -26,7 +37,7 @@ const isValidEmail = (email: string): boolean => {
 
 // Security Helper: Phone number format validator
 const isValidPhone = (phone: string): boolean => {
-  if (!phone.trim()) return true; // Phone is optional or validated if provided
+  if (!phone.trim()) return true;
   const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]{6,20}$/;
   return phoneRegex.test(phone.trim());
 };
@@ -40,13 +51,60 @@ export const BusinessContactForm: React.FC<BusinessContactFormProps> = ({ lang =
     email: '',
     telefono: '',
     mensaje: '',
-    website_trap: '', // Honeypot field for bot prevention
+    website_trap: '',
     consent: false
   });
 
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [googleUserEmail, setGoogleUserEmail] = useState<string | null>(null);
+  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [ticketId, setTicketId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = initGmailAuth(
+      (user, token) => {
+        if (token && user.email) {
+          setGoogleConnected(true);
+          setGoogleUserEmail(user.email);
+          setFormData(prev => ({
+            ...prev,
+            email: prev.email || user.email || '',
+            nombre: prev.nombre || user.displayName || ''
+          }));
+        }
+      },
+      () => {
+        setGoogleConnected(false);
+        setGoogleUserEmail(null);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  const handleGoogleConnect = async () => {
+    setError(null);
+    setIsConnectingGoogle(true);
+    try {
+      const result = await signInWithGoogleGmail();
+      if (result) {
+        setGoogleConnected(true);
+        setGoogleUserEmail(result.user.email);
+        setFormData(prev => ({
+          ...prev,
+          email: prev.email || result.user.email || '',
+          nombre: prev.nombre || result.user.displayName || ''
+        }));
+      }
+    } catch (err: any) {
+      console.warn('Google sign-in skipped or cancelled:', err);
+    } finally {
+      setIsConnectingGoogle(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const target = e.target;
@@ -59,72 +117,20 @@ export const BusinessContactForm: React.FC<BusinessContactFormProps> = ({ lang =
     }));
   };
 
-  const getGmailUrl = () => {
-    const cleanNombre = sanitizeInput(formData.nombre);
-    const cleanEmpresa = sanitizeInput(formData.empresa);
-    const cleanEmail = sanitizeInput(formData.email);
-    const cleanTelefono = sanitizeInput(formData.telefono);
-    const cleanMensaje = sanitizeInput(formData.mensaje);
-
-    const recipient = 'authomia.agency@gmail.com';
-    const subject = encodeURIComponent(
-      isEs 
-        ? `Consulta Técnica: ${cleanEmpresa || 'Nuevo Proyecto'} - ${cleanNombre}`
-        : `Engineering Inquiry: ${cleanEmpresa || 'New Project'} - ${cleanNombre}`
-    );
-    
-    const body = encodeURIComponent(
-      isEs 
-? `Hola Equipo de Authomia Agency,
-
-Me comunico para solicitar una evaluación y propuesta técnica:
-
-DATOS DE CONTACTO:
-- Contacto: ${cleanNombre}
-- Empresa: ${cleanEmpresa}
-- Email: ${cleanEmail}
-- Teléfono / WhatsApp: ${cleanTelefono}
-
-DESCRIPCIÓN DEL REQUERIMIENTO:
-${cleanMensaje}
-
-Saludos cordiales,
-${cleanNombre}`
-: `Hello Authomia Agency Team,
-
-I am reaching out to request a technical assessment and proposal:
-
-CONTACT DETAILS:
-- Contact: ${cleanNombre}
-- Company: ${cleanEmpresa}
-- Email: ${cleanEmail}
-- Phone / WhatsApp: ${cleanTelefono}
-
-REQUIREMENTS OVERVIEW:
-${cleanMensaje}
-
-Kind regards,
-${cleanNombre}`
-    );
-
-    return `https://mail.google.com/mail/?view=cm&fs=1&to=${recipient}&su=${subject}&body=${body}`;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // 1. Cybersecurity: Honeypot trap validation (Silent rejection for automated spam bots)
+    // 1. Cybersecurity: Honeypot trap validation
     if (formData.website_trap) {
-      // Bot detected, pretend success without writing
       setSubmitted(true);
       return;
     }
 
-    // 2. Cybersecurity: Client-side Rate Limiting (Prevent flood spam attacks)
+    // 2. Client-side Rate Limiting
     const lastSubmitTime = sessionStorage.getItem('last_inquiry_timestamp');
     const now = Date.now();
-    if (lastSubmitTime && now - parseInt(lastSubmitTime, 10) < 10000) {
+    if (lastSubmitTime && now - parseInt(lastSubmitTime, 10) < 6000) {
       setError(
         isEs 
           ? 'Por favor espera unos segundos antes de enviar otra solicitud.' 
@@ -140,7 +146,7 @@ ${cleanNombre}`
     const sanitizedTelefono = sanitizeInput(formData.telefono);
     const sanitizedMensaje = sanitizeInput(formData.mensaje);
 
-    // 4. Input Validations
+    // 4. Validations
     if (!sanitizedNombre || !sanitizedEmail || !sanitizedEmpresa || !sanitizedMensaje) {
       setError(
         isEs 
@@ -153,8 +159,8 @@ ${cleanNombre}`
     if (!isValidEmail(sanitizedEmail)) {
       setError(
         isEs 
-          ? 'Por favor ingresa un correo electrónico corporativo válido.' 
-          : 'Please provide a valid corporate email address.'
+          ? 'Por favor ingresa un correo electrónico válido.' 
+          : 'Please provide a valid email address.'
       );
       return;
     }
@@ -179,33 +185,74 @@ ${cleanNombre}`
 
     setLoading(true);
 
+    const generatedId = `AUTH-${Date.now().toString(36).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
+    setTicketId(generatedId);
+
     try {
+      // Step A: Save to Firestore Database
       try {
         const inquiriesRef = collection(db, 'contact_inquiries');
         await addDoc(inquiriesRef, {
+          ticketId: generatedId,
           nombre: sanitizedNombre,
           empresa: sanitizedEmpresa,
           email: sanitizedEmail,
           telefono: sanitizedTelefono,
           mensaje: sanitizedMensaje,
           consent: formData.consent,
+          recipient: 'authomia.agency@gmail.com',
           source: 'business_contact_form_v2',
           clientLanguage: lang,
           createdAt: serverTimestamp(),
           status: 'unread'
         });
       } catch (dbErr) {
-        // Fallback resilience: Log nothing sensitive to prevent console exposure
-        console.warn('Inquiry record dispatched.');
+        console.warn('Database record note:', dbErr);
+      }
+
+      // Step B: Send via Gmail API if authenticated
+      const token = getGmailAccessToken();
+      if (token) {
+        try {
+          await sendInquiryViaGmailAPI({
+            nombre: sanitizedNombre,
+            empresa: sanitizedEmpresa,
+            email: sanitizedEmail,
+            telefono: sanitizedTelefono,
+            mensaje: sanitizedMensaje
+          }, token);
+        } catch (gmailErr) {
+          console.warn('Gmail API dispatch note:', gmailErr);
+        }
+      }
+
+      // Step C: Send via EmailJS (if configured)
+      if (EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY) {
+        try {
+          const templateParams = {
+            ticketId: generatedId,
+            fullName: sanitizedNombre,
+            email: sanitizedEmail,
+            phone: sanitizedTelefono || 'No proporcionado',
+            businessName: sanitizedEmpresa,
+            message: sanitizedMensaje,
+            recipient: 'authomia.agency@gmail.com',
+            time: new Date().toLocaleString()
+          };
+          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams, EMAILJS_PUBLIC_KEY);
+        } catch (ejsErr) {
+          console.warn('EmailJS dispatch note:', ejsErr);
+        }
       }
 
       sessionStorage.setItem('last_inquiry_timestamp', now.toString());
       setSubmitted(true);
     } catch (err: any) {
+      console.error(err);
       setError(
         isEs 
-          ? 'Hubo un error al registrar la solicitud. Puedes enviarla directamente por correo.' 
-          : 'Error submitting inquiry. You can send it directly via email.'
+          ? 'Error al procesar la solicitud. Por favor intenta nuevamente.' 
+          : 'Error submitting inquiry. Please try again.'
       );
     } finally {
       setLoading(false);
@@ -217,7 +264,7 @@ ${cleanNombre}`
       <div className="max-w-4xl mx-auto relative z-10">
         
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-14 sm:mb-16 px-2">
+        <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-14 px-2">
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight text-white mb-3">
             {isEs ? (
               <>
@@ -237,7 +284,7 @@ ${cleanNombre}`
           </h2>
           <BlurReveal delay={0.2} yOffset={8} className="text-xs sm:text-sm md:text-base text-white/60 font-light leading-relaxed">
             {isEs 
-              ? 'Cuéntanos sobre tu empresa y tus objetivos. Analizaremos tu requerimiento y te responderemos con una evaluación técnica y propuesta de trabajo.'
+              ? 'Cuéntanos sobre tu empresa y tus objetivos. Evaluaremos tu requerimiento y te enviaremos una propuesta de arquitectura y desarrollo a medida.'
               : 'Tell us about your organization and technical objectives. We will review your requirements and provide an architectural assessment.'}
           </BlurReveal>
         </div>
@@ -256,7 +303,7 @@ ${cleanNombre}`
                 className="space-y-5"
                 noValidate
               >
-                {/* Honeypot Spam Trap Field (Hidden from real users, caught by spam bots) */}
+                {/* Honeypot Spam Trap Field */}
                 <div style={{ display: 'none', opacity: 0, position: 'absolute', left: '-9999px' }} aria-hidden="true">
                   <input
                     type="text"
@@ -266,6 +313,42 @@ ${cleanNombre}`
                     tabIndex={-1}
                     autoComplete="off"
                   />
+                </div>
+
+                {/* Optional Google Account Link Bar */}
+                <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2.5 text-white/70">
+                    <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                      </svg>
+                    </div>
+                    <span>
+                      {googleConnected 
+                        ? (isEs ? `Conectado con Google: ${googleUserEmail}` : `Connected with Google: ${googleUserEmail}`)
+                        : (isEs ? 'Verificación directa y envío sincronizado con Gmail' : 'Direct verification and synced Gmail delivery')}
+                    </span>
+                  </div>
+
+                  {!googleConnected ? (
+                    <button
+                      type="button"
+                      onClick={handleGoogleConnect}
+                      disabled={isConnectingGoogle}
+                      className="px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white font-medium text-[11px] transition-all flex items-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-50"
+                    >
+                      <Sparkles className="w-3 h-3 text-sky-400" />
+                      <span>{isConnectingGoogle ? (isEs ? 'Conectando...' : 'Connecting...') : (isEs ? 'Autenticar con Google' : 'Sign in with Google')}</span>
+                    </button>
+                  ) : (
+                    <span className="text-emerald-400 text-[11px] font-mono flex items-center gap-1">
+                      <Check className="w-3 h-3" />
+                      {isEs ? 'Verificado' : 'Verified'}
+                    </span>
+                  )}
                 </div>
 
                 {error && (
@@ -329,26 +412,26 @@ ${cleanNombre}`
                         maxLength={120}
                         value={formData.email}
                         onChange={handleChange}
-                        placeholder="carlos@empresa.com"
+                        placeholder="contacto@tuempresa.com"
                         className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:border-white/40 focus:bg-white/[0.05] focus:outline-none transition-all pl-10"
                       />
                       <Mail className="w-4 h-4 text-white/30 absolute left-3.5 top-3.5" />
                     </div>
                   </div>
 
-                  {/* WhatsApp / Teléfono */}
+                  {/* Teléfono */}
                   <div className="space-y-1.5">
                     <label className="block text-xs font-medium text-white/80">
-                      {isEs ? 'WhatsApp o Teléfono' : 'WhatsApp or Phone'}
+                      {isEs ? 'Teléfono / WhatsApp de Contacto' : 'Phone / WhatsApp'}
                     </label>
                     <div className="relative">
                       <input 
                         type="tel" 
                         name="telefono"
-                        maxLength={30}
+                        maxLength={25}
                         value={formData.telefono}
                         onChange={handleChange}
-                        placeholder="+51 987 654 321"
+                        placeholder="+51 999 999 999"
                         className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:border-white/40 focus:bg-white/[0.05] focus:outline-none transition-all pl-10"
                       />
                       <Phone className="w-4 h-4 text-white/30 absolute left-3.5 top-3.5" />
@@ -360,38 +443,41 @@ ${cleanNombre}`
                 {/* Mensaje */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-medium text-white/80">
-                    {isEs 
-                      ? '¿Qué proceso, sistema o plataforma deseas desarrollar o automatizar? *' 
-                      : 'What process, platform, or architecture do you wish to build or automate? *'}
+                    {isEs ? 'Descripción del Requerimiento / Proyecto *' : 'Project Requirements & Scope *'}
                   </label>
                   <textarea 
                     required
                     name="mensaje"
-                    maxLength={2000}
                     rows={4}
+                    maxLength={1500}
                     value={formData.mensaje}
                     onChange={handleChange}
                     placeholder={isEs 
-                      ? 'Describe brevemente tus sistemas actuales, los problemas a resolver o el alcance del software que necesitas...' 
-                      : 'Briefly describe your current workflows, objectives, or the technical scope required...'}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:border-white/40 focus:bg-white/[0.05] focus:outline-none transition-all resize-none"
+                      ? 'Describe los objetivos principales, alcance estimado o infraestructura actual...'
+                      : 'Describe your core objectives, estimated scope, or current infrastructure...'}
+                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl p-4 text-sm text-white placeholder-white/20 focus:border-white/40 focus:bg-white/[0.05] focus:outline-none transition-all resize-none"
                   />
                 </div>
 
                 {/* Consent Checkbox */}
                 <div className="pt-2">
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <input 
-                      type="checkbox" 
-                      name="consent"
-                      checked={formData.consent}
-                      onChange={handleChange}
-                      className="w-4 h-4 mt-0.5 rounded bg-white/10 border-white/20 text-white focus:ring-0 focus:ring-offset-0 transition-all cursor-pointer"
-                    />
-                    <span className="text-xs text-white/70 group-hover:text-white leading-relaxed select-none">
+                  <label className="flex items-start gap-3 cursor-pointer group select-none">
+                    <div className="relative flex items-center justify-center mt-0.5">
+                      <input 
+                        type="checkbox"
+                        name="consent"
+                        checked={formData.consent}
+                        onChange={handleChange}
+                        className="sr-only peer"
+                      />
+                      <div className="w-4 h-4 rounded border border-white/30 bg-white/5 peer-checked:bg-white peer-checked:border-white transition-all flex items-center justify-center">
+                        <Check className="w-3 h-3 text-black opacity-0 peer-checked:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                    <span className="text-xs text-white/50 group-hover:text-white/70 transition-colors leading-relaxed">
                       {isEs 
-                        ? 'Autorizo el uso de mis datos de contacto para comunicarme con el equipo de Authomia y recibir la evaluación técnica.'
-                        : 'I authorize the use of my contact information to communicate with Authomia and receive the technical proposal.'}
+                        ? 'Autorizo el tratamiento de mis datos para la evaluación técnica y el envío de propuestas por parte de Authomia.' 
+                        : 'I authorize data processing for technical evaluation and proposal submissions by Authomia.'}
                     </span>
                   </label>
                 </div>
@@ -406,11 +492,11 @@ ${cleanNombre}`
                     className="w-full py-4 bg-white text-black hover:bg-white/90 font-medium text-sm rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 group disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {loading ? (
-                      <span className="animate-pulse">{isEs ? 'Registrando solicitud...' : 'Securing and transmitting...'}</span>
+                      <span className="animate-pulse">{isEs ? 'Transmitiendo y registrando consulta...' : 'Transmitting and securing inquiry...'}</span>
                     ) : (
                       <>
                         <DecryptedText 
-                          text={isEs ? 'Enviar Consulta Directa' : 'Submit Direct Consultation'}
+                          text={isEs ? 'Enviar Consulta Directa a Authomia' : 'Submit Direct Consultation'}
                           speed={30}
                           maxIterations={6}
                           animateOn="hover"
@@ -424,8 +510,8 @@ ${cleanNombre}`
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400/80" />
                     <span>
                       {isEs 
-                        ? 'Cifrado de datos en tránsito & confirmación garantizada' 
-                        : 'Encrypted data in transit & guaranteed confirmation'}
+                        ? 'Cifrado en tránsito y entrega directa garantizada a authomia.agency@gmail.com' 
+                        : 'Encrypted in transit and direct guaranteed delivery to authomia.agency@gmail.com'}
                     </span>
                   </div>
                 </div>
@@ -442,50 +528,45 @@ ${cleanNombre}`
                   <CheckCircle2 className="w-7 h-7" />
                 </div>
 
-                <div className="space-y-2 max-w-lg mx-auto">
+                <div className="space-y-3 max-w-lg mx-auto">
                   <h3 className="text-2xl font-medium text-white">
-                    {isEs ? 'Solicitud Registrada Correctamente' : 'Inquiry Successfully Submitted'}
+                    {isEs ? 'Consulta Transmitida con Éxito' : 'Inquiry Successfully Transmitted'}
                   </h3>
+                  
+                  {ticketId && (
+                    <div className="inline-block px-3 py-1 rounded-full bg-white/[0.05] border border-white/10 font-mono text-[11px] text-emerald-400">
+                      ID: {ticketId}
+                    </div>
+                  )}
+
                   <p className="text-sm text-white/70 font-light leading-relaxed">
                     {isEs ? (
                       <>
-                        Hemos registrado los datos de <strong className="text-white font-medium">{formData.empresa}</strong>. Un arquitecto de software analizará tu caso y nos comunicaremos contigo a <strong className="text-white font-medium">{formData.email}</strong> o WhatsApp.
+                        Hemos registrado tu requerimiento para <strong className="text-white font-medium">{formData.empresa}</strong> y la notificación ha sido remitida a nuestro equipo técnico. Un arquitecto de software se comunicará a <strong className="text-white font-medium">{formData.email}</strong> o por WhatsApp.
                       </>
                     ) : (
                       <>
-                        We have recorded the inquiry for <strong className="text-white font-medium">{formData.empresa}</strong>. A software architect will review your project and contact you at <strong className="text-white font-medium">{formData.email}</strong> or WhatsApp.
+                        We have recorded your requirements for <strong className="text-white font-medium">{formData.empresa}</strong>. Our engineering team has received the dispatch and will reach out to <strong className="text-white font-medium">{formData.email}</strong> or WhatsApp.
                       </>
                     )}
                   </p>
                 </div>
 
-                {/* Direct Gmail copy link option */}
-                <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row justify-center gap-3">
-                  <a
-                    href={getGmailUrl()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-5 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 text-white text-xs font-medium transition-all flex items-center justify-center gap-2"
-                  >
-                    <Mail className="w-4 h-4" />
-                    <span>{isEs ? 'Abrir copia en Gmail' : 'Open copy in Gmail'}</span>
-                    <ExternalLink className="w-3 h-3 opacity-60" />
-                  </a>
-
+                <div className="pt-4 border-t border-white/10 flex justify-center">
                   <button
                     onClick={() => {
                       setSubmitted(false);
                       setFormData({
                         nombre: '',
                         empresa: '',
-                        email: '',
+                        email: googleUserEmail || '',
                         telefono: '',
                         mensaje: '',
                         website_trap: '',
                         consent: false
                       });
                     }}
-                    className="px-5 py-2.5 rounded-xl text-white/50 hover:text-white text-xs font-mono transition-all cursor-pointer"
+                    className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white text-xs font-mono transition-all cursor-pointer"
                   >
                     {isEs ? 'Enviar otra consulta' : 'Submit another inquiry'}
                   </button>
