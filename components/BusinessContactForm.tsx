@@ -211,15 +211,18 @@ ${cleanNombre}`
   };
 
   return (
-    <section id="contacto-directo" className="py-24 px-6 bg-[#030407] border-t border-white/[0.08] relative overflow-hidden">
+    <section id="contacto-directo" className="py-24 sm:py-32 px-4 sm:px-6 md:px-8 bg-[#030407] border-t border-white/[0.08] relative overflow-hidden scroll-mt-20">
       <div className="max-w-4xl mx-auto relative z-10">
         
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-medium tracking-tight text-white mb-3">
+        <div className="text-center max-w-2xl mx-auto mb-14 sm:mb-16 px-2">
+          <span className="inline-block px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-white/60 font-mono text-[11px] uppercase tracking-widest mb-4">
+            {isEs ? 'Canal Directo' : 'Direct Channel'}
+          </span>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight text-white mb-3">
             {isEs ? 'Inicia tu Consulta con Nuestro Equipo' : 'Initiate Your Technical Consultation'}
           </h2>
-          <p className="text-sm sm:text-base text-white/60 font-light leading-relaxed">
+          <p className="text-xs sm:text-sm md:text-base text-white/60 font-light leading-relaxed">
             {isEs 
               ? 'Cuéntanos sobre tu empresa y tus objetivos. Analizaremos tu requerimiento y te responderemos con una evaluación técnica y propuesta de trabajo.'
               : 'Tell us about your organization and technical objectives. We will review your requirements and provide an architectural assessment.'}
@@ -227,7 +230,7 @@ ${cleanNombre}`
         </div>
 
         {/* Card Container */}
-        <div className="bg-[#07090e] border border-white/10 rounded-2xl p-6 sm:p-10 shadow-2xl">
+        <div className="bg-[#07090e] border border-white/10 rounded-2xl p-5 sm:p-10 lg:p-12 shadow-2xl">
           
           <AnimatePresence mode="wait">
             {!submitted ? (

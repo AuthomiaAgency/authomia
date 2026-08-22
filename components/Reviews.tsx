@@ -24,13 +24,16 @@ export const Reviews: React.FC<ReviewsProps> = ({ lang = 'es' }) => {
   }, []);
 
   return (
-    <section id="reseñas" className="py-20 px-6 bg-[#030407] border-t border-white/[0.08] relative overflow-hidden">
+    <section id="reseñas" className="py-24 sm:py-32 px-4 sm:px-6 md:px-8 bg-[#030407] border-t border-white/[0.08] relative overflow-hidden scroll-mt-20">
       <div className="max-w-6xl mx-auto relative z-10">
         
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6 px-2">
           <div className="text-left max-w-2xl">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium tracking-tight text-white mb-2.5">
+            <span className="inline-block px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-white/60 font-mono text-[11px] uppercase tracking-widest mb-4">
+              {isEs ? 'Auditoría & Reputación' : 'Audit & Reputation'}
+            </span>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight text-white mb-3">
               {isEs ? (
                 <>
                   Reseñas & <span className="font-serif italic font-normal text-white/90">Testimonios Verificados</span>
@@ -41,7 +44,7 @@ export const Reviews: React.FC<ReviewsProps> = ({ lang = 'es' }) => {
                 </>
               )}
             </h2>
-            <p className="text-white/50 text-xs sm:text-sm font-light leading-relaxed">
+            <p className="text-white/50 text-xs sm:text-sm md:text-base font-light leading-relaxed">
               {isEs 
                 ? 'Valoraciones transparentes y opiniones públicas de empresas y profesionales que operan con nuestra infraestructura.'
                 : 'Direct public ratings and feedback from organizations operating on our engineering infrastructure.'}
@@ -55,7 +58,7 @@ export const Reviews: React.FC<ReviewsProps> = ({ lang = 'es' }) => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.4 }}
-          className="bg-[#06080e] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-8"
+          className="bg-[#06080e] border border-white/10 rounded-2xl p-5 sm:p-8 lg:p-10 shadow-2xl space-y-8"
         >
           
           {/* Elfsight Reviews Widget */}

@@ -114,10 +114,10 @@ export const Intro: React.FC<IntroProps> = ({ lang = 'es' }) => {
   const isEs = lang === 'es';
 
   return (
-    <section className="py-20 px-6 max-w-7xl mx-auto relative" id="servicios">
+    <section className="py-24 sm:py-32 px-4 sm:px-6 md:px-8 max-w-7xl mx-auto relative scroll-mt-20" id="servicios">
       
       {/* Main Header */}
-      <div className="text-center mb-16 max-w-3xl mx-auto">
+      <div className="text-center mb-14 sm:mb-20 max-w-3xl mx-auto px-2">
         <h2 className="text-2xl sm:text-4xl md:text-5xl font-medium text-white tracking-tight leading-tight">
           {isEs ? (
             <>
@@ -129,7 +129,7 @@ export const Intro: React.FC<IntroProps> = ({ lang = 'es' }) => {
             </>
           )}
         </h2>
-        <p className="mt-3 text-white/50 text-xs sm:text-sm font-light leading-relaxed">
+        <p className="mt-3.5 sm:mt-4 text-white/50 text-xs sm:text-sm md:text-base font-light leading-relaxed max-w-2xl mx-auto">
           {isEs 
             ? '4 divisiones de ejecución técnica para sistematizar, acelerar y proteger la operación de tu empresa.'
             : '4 specialized engineering divisions built to modernize, automate, and safeguard enterprise workflows.'}
@@ -137,7 +137,7 @@ export const Intro: React.FC<IntroProps> = ({ lang = 'es' }) => {
       </div>
 
       {/* 4 Distinct Divisions */}
-      <div className="space-y-10">
+      <div className="space-y-8 sm:space-y-12">
         {DIVISIONS.map((div, dIdx) => (
           <motion.div
             key={div.id}
@@ -145,7 +145,7 @@ export const Intro: React.FC<IntroProps> = ({ lang = 'es' }) => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.35, delay: dIdx * 0.05 }}
-            className="p-6 sm:p-8 rounded-2xl bg-[#06080e] border border-white/10 shadow-2xl"
+            className="p-5 sm:p-8 lg:p-9 rounded-2xl bg-[#06080e] border border-white/10 shadow-2xl transition-all"
           >
             {/* Division Header with Clean Typography - No DIV prefix */}
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-4">
@@ -162,7 +162,7 @@ export const Intro: React.FC<IntroProps> = ({ lang = 'es' }) => {
             <div className="w-full h-px bg-white/10 mb-6" />
 
             {/* Grid of 3 blocks per row with precise engineering icons & clean typography */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {div.services.map((srv, sIdx) => {
                 const IconComp = srv.icon;
                 return (

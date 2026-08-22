@@ -54,12 +54,12 @@ export const Comparison: React.FC<ComparisonProps> = ({ lang = 'es' }) => {
   const isEs = lang === 'es';
 
   return (
-    <section className="py-20 px-6 relative bg-[#030408] border-t border-white/[0.08]" id="comparativa">
+    <section className="py-24 sm:py-32 px-4 sm:px-6 md:px-8 relative bg-[#030408] border-t border-white/[0.08] scroll-mt-20" id="comparativa">
       <div className="max-w-5xl mx-auto">
         
         {/* Header */}
-        <div className="text-center mb-12 max-w-2xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-white tracking-tight leading-tight">
+        <div className="text-center mb-14 sm:mb-16 max-w-2xl mx-auto px-2">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium text-white tracking-tight leading-tight">
             {isEs ? (
               <>
                 Criterios Técnicos: <span className="font-serif italic font-normal text-white/90">Authomia vs. Agencias</span>
@@ -70,7 +70,7 @@ export const Comparison: React.FC<ComparisonProps> = ({ lang = 'es' }) => {
               </>
             )}
           </h2>
-          <p className="mt-2.5 text-white/50 text-xs sm:text-sm font-light leading-relaxed">
+          <p className="mt-3 sm:mt-4 text-white/50 text-xs sm:text-sm font-light leading-relaxed max-w-xl mx-auto">
             {isEs 
               ? 'Diferencias concretas de arquitectura, soberanía y rendimiento operativo.'
               : 'Concrete technical differences in architecture, ownership, and performance.'}
