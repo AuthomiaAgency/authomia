@@ -15,20 +15,23 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Inicialización de App Check (Seguridad contra Bots y Scraping)
-// NOTA: Reemplaza 'TU_CLAVE_DE_SITIO_RECAPTCHA_AQUI' con la clave que generes en Google Cloud
-let appCheck;
+// Inicialización segura de App Check (solo en producción autorizada)
+let appCheck: any = null;
 if (typeof window !== "undefined") {
   try {
-    appCheck = initializeAppCheck(app, {
-      provider: new ReCaptchaEnterpriseProvider('6LcZX5IsAAAAAM8Wa4TtF0lELSabzFUKtrzGFZNW'),
-      isTokenAutoRefreshEnabled: true
-    });
+    const isProd = window.location.hostname === 'authomia.cloud' || window.location.hostname === 'www.authomia.cloud';
+    if (isProd) {
+      appCheck = initializeAppCheck(app, {
+        provider: new ReCaptchaEnterpriseProvider('6LcZX5IsAAAAAM8Wa4TtF0lELSabzFUKtrzGFZNW'),
+        isTokenAutoRefreshEnabled: true
+      });
+    }
   } catch (e) {
-    console.warn("App Check initialization failed or already initialized", e);
+    // Graceful fallback if AppCheck is not reachable
   }
 }
 
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export { appCheck };
+

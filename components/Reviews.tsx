@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Star, CheckCircle2, ExternalLink, Facebook, ShieldCheck, MessageSquarePlus } from 'lucide-react';
+import { WordPullUp, BlurReveal } from './ui/BlurReveal';
 
 interface ReviewsProps {
   lang?: 'es' | 'en';
@@ -30,34 +31,37 @@ export const Reviews: React.FC<ReviewsProps> = ({ lang = 'es' }) => {
         {/* Section Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6 px-2">
           <div className="text-left max-w-2xl">
-            <span className="inline-block px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-white/60 font-mono text-[11px] uppercase tracking-widest mb-4">
-              {isEs ? 'Auditoría & Reputación' : 'Audit & Reputation'}
-            </span>
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight text-white mb-3">
               {isEs ? (
                 <>
-                  Reseñas & <span className="font-serif italic font-normal text-white/90">Testimonios Verificados</span>
+                  <WordPullUp words="Reseñas &" />{' '}
+                  <span className="font-serif italic font-normal text-white/90">
+                    <WordPullUp words="Testimonios Verificados" delay={0.15} />
+                  </span>
                 </>
               ) : (
                 <>
-                  Verified Reviews & <span className="font-serif italic font-normal text-white/90">Client Feedback</span>
+                  <WordPullUp words="Verified Reviews &" />{' '}
+                  <span className="font-serif italic font-normal text-white/90">
+                    <WordPullUp words="Client Feedback" delay={0.15} />
+                  </span>
                 </>
               )}
             </h2>
-            <p className="text-white/50 text-xs sm:text-sm md:text-base font-light leading-relaxed">
+            <BlurReveal delay={0.2} yOffset={8} className="text-white/50 text-xs sm:text-sm md:text-base font-light leading-relaxed">
               {isEs 
                 ? 'Valoraciones transparentes y opiniones públicas de empresas y profesionales que operan con nuestra infraestructura.'
                 : 'Direct public ratings and feedback from organizations operating on our engineering infrastructure.'}
-            </p>
+            </BlurReveal>
           </div>
         </div>
 
         {/* Live Widget & Verified Portals Panel */}
         <motion.div 
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 20, filter: 'blur(6px)' }}
+          whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           viewport={{ once: true }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="bg-[#06080e] border border-white/10 rounded-2xl p-5 sm:p-8 lg:p-10 shadow-2xl space-y-8"
         >
           
@@ -75,7 +79,9 @@ export const Reviews: React.FC<ReviewsProps> = ({ lang = 'es' }) => {
             </p>
 
             <div className="flex flex-wrap items-center gap-3">
-              <a 
+              <motion.a 
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 href="https://www.trustindex.io/reviews/authomia.cloud" 
                 target="_blank" 
                 rel="noopener noreferrer"
@@ -84,9 +90,11 @@ export const Reviews: React.FC<ReviewsProps> = ({ lang = 'es' }) => {
                 <Star className="w-3.5 h-3.5 fill-white" />
                 <span>Trustindex</span>
                 <ExternalLink className="w-3 h-3 opacity-70" />
-              </a>
+              </motion.a>
 
-              <a 
+              <motion.a 
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 href="https://www.facebook.com/authomia" 
                 target="_blank" 
                 rel="noopener noreferrer"
@@ -95,7 +103,7 @@ export const Reviews: React.FC<ReviewsProps> = ({ lang = 'es' }) => {
                 <Facebook className="w-3.5 h-3.5 fill-white" />
                 <span>Facebook Reviews</span>
                 <ExternalLink className="w-3 h-3 opacity-70" />
-              </a>
+              </motion.a>
             </div>
           </div>
 

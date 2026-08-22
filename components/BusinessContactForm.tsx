@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, CheckCircle2, Mail, Building2, User, Phone, ExternalLink, ShieldCheck } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { WordPullUp, BlurReveal } from './ui/BlurReveal';
+import { DecryptedText } from './ui/DecryptedText';
 
 interface BusinessContactFormProps {
   lang?: 'es' | 'en';
@@ -216,17 +218,28 @@ ${cleanNombre}`
         
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-14 sm:mb-16 px-2">
-          <span className="inline-block px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-white/60 font-mono text-[11px] uppercase tracking-widest mb-4">
-            {isEs ? 'Canal Directo' : 'Direct Channel'}
-          </span>
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight text-white mb-3">
-            {isEs ? 'Inicia tu Consulta con Nuestro Equipo' : 'Initiate Your Technical Consultation'}
+            {isEs ? (
+              <>
+                <WordPullUp words="Inicia tu Consulta con" />{' '}
+                <span className="font-serif italic font-normal text-white/90">
+                  <WordPullUp words="Nuestro Equipo" delay={0.15} />
+                </span>
+              </>
+            ) : (
+              <>
+                <WordPullUp words="Initiate Your" />{' '}
+                <span className="font-serif italic font-normal text-white/90">
+                  <WordPullUp words="Technical Consultation" delay={0.15} />
+                </span>
+              </>
+            )}
           </h2>
-          <p className="text-xs sm:text-sm md:text-base text-white/60 font-light leading-relaxed">
+          <BlurReveal delay={0.2} yOffset={8} className="text-xs sm:text-sm md:text-base text-white/60 font-light leading-relaxed">
             {isEs 
               ? 'Cuéntanos sobre tu empresa y tus objetivos. Analizaremos tu requerimiento y te responderemos con una evaluación técnica y propuesta de trabajo.'
               : 'Tell us about your organization and technical objectives. We will review your requirements and provide an architectural assessment.'}
-          </p>
+          </BlurReveal>
         </div>
 
         {/* Card Container */}
@@ -385,7 +398,9 @@ ${cleanNombre}`
 
                 {/* Submit button & Security Badge */}
                 <div className="pt-3">
-                  <button 
+                  <motion.button 
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
                     type="submit"
                     disabled={loading || !formData.consent}
                     className="w-full py-4 bg-white text-black hover:bg-white/90 font-medium text-sm rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 group disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
@@ -394,11 +409,16 @@ ${cleanNombre}`
                       <span className="animate-pulse">{isEs ? 'Registrando solicitud...' : 'Securing and transmitting...'}</span>
                     ) : (
                       <>
-                        <span>{isEs ? 'Enviar Consulta Directa' : 'Submit Direct Consultation'}</span>
+                        <DecryptedText 
+                          text={isEs ? 'Enviar Consulta Directa' : 'Submit Direct Consultation'}
+                          speed={30}
+                          maxIterations={6}
+                          animateOn="hover"
+                        />
                         <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                       </>
                     )}
-                  </button>
+                  </motion.button>
                   
                   <div className="flex items-center justify-center gap-2 mt-3 text-[11px] text-white/40 font-mono">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400/80" />

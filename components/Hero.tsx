@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Content } from '../types';
 import { LOGO_TEXT_URL } from '../constants';
 import { ArrowRight, ShieldCheck, Cpu, Code2, Globe2 } from 'lucide-react';
+import { WordPullUp, BlurReveal } from './ui/BlurReveal';
+import { DecryptedText } from './ui/DecryptedText';
 
 interface HeroProps {
   content: Content['hero'];
@@ -25,43 +27,41 @@ const Hero: React.FC<HeroProps> = ({ content, lang = 'es', onCta }) => {
         
         {/* Brand Logo Display */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8 }}
+          initial={{ opacity: 0, scale: 0.92, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
           className="mb-6 sm:mb-8"
         >
           <img 
             src={LOGO_TEXT_URL} 
             alt="Authomia Agency" 
-            className="w-[130px] sm:w-[150px] md:w-[180px] h-auto invert opacity-90 object-contain mx-auto" 
+            className="w-[130px] sm:w-[150px] md:w-[180px] h-auto invert opacity-90 object-contain mx-auto transition-transform hover:scale-105 duration-500" 
           />
         </motion.div>
 
-        {/* Primary Headline */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight leading-[1.12] text-white max-w-4xl px-2"
-        >
+        {/* Primary Headline with WordPullUp animation */}
+        <div className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight leading-[1.12] text-white max-w-4xl px-2">
           {isEs ? (
             <>
-              Infraestructura digital con <span className="font-serif italic font-normal text-white/90">precisión técnica</span> e inteligencia real.
+              <WordPullUp words="Infraestructura digital con" delay={0.1} />{' '}
+              <span className="font-serif italic font-normal text-white/90">
+                <WordPullUp words="precisión técnica" delay={0.3} />
+              </span>{' '}
+              <WordPullUp words="e inteligencia real." delay={0.45} />
             </>
           ) : (
             <>
-              Digital infrastructure with <span className="font-serif italic font-normal text-white/90">technical precision</span> and applied intelligence.
+              <WordPullUp words="Digital infrastructure with" delay={0.1} />{' '}
+              <span className="font-serif italic font-normal text-white/90">
+                <WordPullUp words="technical precision" delay={0.3} />
+              </span>{' '}
+              <WordPullUp words="and applied intelligence." delay={0.45} />
             </>
           )}
-        </motion.h1>
+        </div>
 
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-6 sm:mt-8 text-sm sm:text-base md:text-lg text-white/60 max-w-2xl leading-relaxed font-light px-4"
-        >
+        {/* Subtitle with BlurReveal */}
+        <BlurReveal delay={0.5} duration={0.9} yOffset={14} className="mt-6 sm:mt-8 text-sm sm:text-base md:text-lg text-white/60 max-w-2xl leading-relaxed font-light px-4">
           {isEs ? (
             <>
               Diseñamos plataformas web, automatización de procesos e integraciones de IA que transforman fricciones operativas en <span className="text-white/80">activos escalables</span>.
@@ -71,53 +71,82 @@ const Hero: React.FC<HeroProps> = ({ content, lang = 'es', onCta }) => {
               We engineer web platforms, process automation, and applied AI systems that turn operational frictions into <span className="text-white/80">scalable digital assets</span>.
             </>
           )}
-        </motion.p>
+        </BlurReveal>
 
-        {/* Actions Bar */}
+        {/* Actions Bar with Micro-interactions */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45, duration: 0.7 }}
+          transition={{ delay: 0.65, duration: 0.7 }}
           className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 w-full sm:w-auto px-4"
         >
-          <button 
+          <motion.button 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={onCta}
-            className="w-full sm:w-auto px-8 py-3.5 bg-white text-[#050505] hover:bg-white/90 font-medium text-sm rounded-xl transition-all duration-300 shadow-md flex items-center justify-center gap-2 group cursor-pointer"
+            className="w-full sm:w-auto px-8 py-3.5 bg-white text-[#050505] hover:bg-white/90 font-medium text-sm rounded-xl transition-all duration-300 shadow-md hover:shadow-white/10 flex items-center justify-center gap-2 group cursor-pointer"
           >
             <span>{isEs ? 'Explorar Servicios' : 'Explore Services'}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
+          </motion.button>
           
-          <a
+          <motion.a
+            whileHover={{ scale: 1.02, backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+            whileTap={{ scale: 0.98 }}
             href="#contacto-directo"
-            className="w-full sm:w-auto px-8 py-3.5 bg-white/[0.03] hover:bg-white/[0.08] text-white border border-white/10 hover:border-white/20 font-medium text-sm rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-8 py-3.5 bg-white/[0.03] text-white border border-white/10 hover:border-white/25 font-medium text-sm rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
           >
-            {isEs ? 'Iniciar Consulta' : 'Start Consultation'}
-          </a>
+            <DecryptedText 
+              text={isEs ? 'Iniciar Consulta' : 'Start Consultation'} 
+              speed={35}
+              maxIterations={8}
+              animateOn="hover"
+            />
+          </motion.a>
         </motion.div>
 
         {/* Enterprise Highlights Strip */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.65, duration: 0.8 }}
+          transition={{ delay: 0.8, duration: 0.8 }}
           className="mt-14 sm:mt-20 pt-8 sm:pt-10 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 md:gap-8 w-full max-w-4xl px-2"
         >
-          <div className="flex items-center justify-center gap-2 text-white/50 text-[11px] sm:text-xs font-mono">
-            <Code2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-white/70 shrink-0" />
-            <span>{isEs ? 'Desarrollo a Medida' : 'Custom Engineering'}</span>
+          <div className="flex items-center justify-center gap-2 text-white/50 hover:text-white/80 transition-colors text-[11px] sm:text-xs font-mono group cursor-default">
+            <Code2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-white/70 group-hover:text-white group-hover:rotate-6 transition-all shrink-0" />
+            <DecryptedText 
+              text={isEs ? 'Desarrollo a Medida' : 'Custom Engineering'} 
+              speed={40}
+              maxIterations={8}
+              animateOn="view"
+            />
           </div>
-          <div className="flex items-center justify-center gap-2 text-white/50 text-[11px] sm:text-xs font-mono">
-            <Cpu className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-white/70 shrink-0" />
-            <span>{isEs ? 'Integración IA Aplicada' : 'Applied AI Systems'}</span>
+          <div className="flex items-center justify-center gap-2 text-white/50 hover:text-white/80 transition-colors text-[11px] sm:text-xs font-mono group cursor-default">
+            <Cpu className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-white/70 group-hover:text-white group-hover:rotate-6 transition-all shrink-0" />
+            <DecryptedText 
+              text={isEs ? 'Integración IA Aplicada' : 'Applied AI Systems'} 
+              speed={40}
+              maxIterations={8}
+              animateOn="view"
+            />
           </div>
-          <div className="flex items-center justify-center gap-2 text-white/50 text-[11px] sm:text-xs font-mono">
-            <Globe2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-white/70 shrink-0" />
-            <span>{isEs ? 'Visibilidad y Conversión' : 'Conversion & Scale'}</span>
+          <div className="flex items-center justify-center gap-2 text-white/50 hover:text-white/80 transition-colors text-[11px] sm:text-xs font-mono group cursor-default">
+            <Globe2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-white/70 group-hover:text-white group-hover:rotate-6 transition-all shrink-0" />
+            <DecryptedText 
+              text={isEs ? 'Visibilidad y Conversión' : 'Conversion & Scale'} 
+              speed={40}
+              maxIterations={8}
+              animateOn="view"
+            />
           </div>
-          <div className="flex items-center justify-center gap-2 text-white/50 text-[11px] sm:text-xs font-mono">
-            <ShieldCheck className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-white/70 shrink-0" />
-            <span>{isEs ? 'Seguridad & Soberanía' : 'Security & Ownership'}</span>
+          <div className="flex items-center justify-center gap-2 text-white/50 hover:text-white/80 transition-colors text-[11px] sm:text-xs font-mono group cursor-default">
+            <ShieldCheck className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-white/70 group-hover:text-white group-hover:rotate-6 transition-all shrink-0" />
+            <DecryptedText 
+              text={isEs ? 'Seguridad & Soberanía' : 'Security & Ownership'} 
+              speed={40}
+              maxIterations={8}
+              animateOn="view"
+            />
           </div>
         </motion.div>
 
