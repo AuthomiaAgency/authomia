@@ -1,17 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, CheckCircle2, Mail, Building2, User, Phone, ShieldCheck, Check, Sparkles } from 'lucide-react';
+import { Send, CheckCircle2, Mail, Building2, User, Phone, ShieldCheck, Check } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { WordPullUp, BlurReveal } from './ui/BlurReveal';
 import { DecryptedText } from './ui/DecryptedText';
-import { 
-  signInWithGoogleGmail, 
-  initGmailAuth, 
-  sendInquiryViaGmailAPI, 
-  getGmailAccessToken 
-} from '../lib/gmailAuth';
 
 interface BusinessContactFormProps {
   lang?: 'es' | 'en';
@@ -55,56 +49,10 @@ export const BusinessContactForm: React.FC<BusinessContactFormProps> = ({ lang =
     consent: false
   });
 
-  const [googleConnected, setGoogleConnected] = useState(false);
-  const [googleUserEmail, setGoogleUserEmail] = useState<string | null>(null);
-  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [ticketId, setTicketId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const unsubscribe = initGmailAuth(
-      (user, token) => {
-        if (token && user.email) {
-          setGoogleConnected(true);
-          setGoogleUserEmail(user.email);
-          setFormData(prev => ({
-            ...prev,
-            email: prev.email || user.email || '',
-            nombre: prev.nombre || user.displayName || ''
-          }));
-        }
-      },
-      () => {
-        setGoogleConnected(false);
-        setGoogleUserEmail(null);
-      }
-    );
-    return () => unsubscribe();
-  }, []);
-
-  const handleGoogleConnect = async () => {
-    setError(null);
-    setIsConnectingGoogle(true);
-    try {
-      const result = await signInWithGoogleGmail();
-      if (result) {
-        setGoogleConnected(true);
-        setGoogleUserEmail(result.user.email);
-        setFormData(prev => ({
-          ...prev,
-          email: prev.email || result.user.email || '',
-          nombre: prev.nombre || result.user.displayName || ''
-        }));
-      }
-    } catch (err: any) {
-      console.warn('Google sign-in skipped or cancelled:', err);
-    } finally {
-      setIsConnectingGoogle(false);
-    }
-  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const target = e.target;
@@ -130,7 +78,7 @@ export const BusinessContactForm: React.FC<BusinessContactFormProps> = ({ lang =
     // 2. Client-side Rate Limiting
     const lastSubmitTime = sessionStorage.getItem('last_inquiry_timestamp');
     const now = Date.now();
-    if (lastSubmitTime && now - parseInt(lastSubmitTime, 10) < 6000) {
+    if (lastSubmitTime && now - parseInt(lastSubmitTime, 10) < 5000) {
       setError(
         isEs 
           ? 'Por favor espera unos segundos antes de enviar otra solicitud.' 
@@ -201,7 +149,7 @@ export const BusinessContactForm: React.FC<BusinessContactFormProps> = ({ lang =
           mensaje: sanitizedMensaje,
           consent: formData.consent,
           recipient: 'authomia.agency@gmail.com',
-          source: 'business_contact_form_v2',
+          source: 'business_contact_form',
           clientLanguage: lang,
           createdAt: serverTimestamp(),
           status: 'unread'
@@ -210,23 +158,7 @@ export const BusinessContactForm: React.FC<BusinessContactFormProps> = ({ lang =
         console.warn('Database record note:', dbErr);
       }
 
-      // Step B: Send via Gmail API if authenticated
-      const token = getGmailAccessToken();
-      if (token) {
-        try {
-          await sendInquiryViaGmailAPI({
-            nombre: sanitizedNombre,
-            empresa: sanitizedEmpresa,
-            email: sanitizedEmail,
-            telefono: sanitizedTelefono,
-            mensaje: sanitizedMensaje
-          }, token);
-        } catch (gmailErr) {
-          console.warn('Gmail API dispatch note:', gmailErr);
-        }
-      }
-
-      // Step C: Send via EmailJS (if configured)
+      // Step B: Send via EmailJS / SMTP dispatcher (if configured)
       if (EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY) {
         try {
           const templateParams = {
@@ -313,42 +245,6 @@ export const BusinessContactForm: React.FC<BusinessContactFormProps> = ({ lang =
                     tabIndex={-1}
                     autoComplete="off"
                   />
-                </div>
-
-                {/* Optional Google Account Link Bar */}
-                <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-2.5 text-white/70">
-                    <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                      </svg>
-                    </div>
-                    <span>
-                      {googleConnected 
-                        ? (isEs ? `Conectado con Google: ${googleUserEmail}` : `Connected with Google: ${googleUserEmail}`)
-                        : (isEs ? 'Verificación directa y envío sincronizado con Gmail' : 'Direct verification and synced Gmail delivery')}
-                    </span>
-                  </div>
-
-                  {!googleConnected ? (
-                    <button
-                      type="button"
-                      onClick={handleGoogleConnect}
-                      disabled={isConnectingGoogle}
-                      className="px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white font-medium text-[11px] transition-all flex items-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-50"
-                    >
-                      <Sparkles className="w-3 h-3 text-sky-400" />
-                      <span>{isConnectingGoogle ? (isEs ? 'Conectando...' : 'Connecting...') : (isEs ? 'Autenticar con Google' : 'Sign in with Google')}</span>
-                    </button>
-                  ) : (
-                    <span className="text-emerald-400 text-[11px] font-mono flex items-center gap-1">
-                      <Check className="w-3 h-3" />
-                      {isEs ? 'Verificado' : 'Verified'}
-                    </span>
-                  )}
                 </div>
 
                 {error && (
@@ -453,8 +349,8 @@ export const BusinessContactForm: React.FC<BusinessContactFormProps> = ({ lang =
                     value={formData.mensaje}
                     onChange={handleChange}
                     placeholder={isEs 
-                      ? 'Describe los objetivos principales, alcance estimado o infraestructura actual...'
-                      : 'Describe your core objectives, estimated scope, or current infrastructure...'}
+                      ? 'Describe los objetivos principales, alcance estimado o requerimientos técnicos...'
+                      : 'Describe your core objectives, estimated scope, or technical requirements...'}
                     className="w-full bg-white/[0.03] border border-white/10 rounded-xl p-4 text-sm text-white placeholder-white/20 focus:border-white/40 focus:bg-white/[0.05] focus:outline-none transition-all resize-none"
                   />
                 </div>
@@ -542,11 +438,11 @@ export const BusinessContactForm: React.FC<BusinessContactFormProps> = ({ lang =
                   <p className="text-sm text-white/70 font-light leading-relaxed">
                     {isEs ? (
                       <>
-                        Hemos registrado tu requerimiento para <strong className="text-white font-medium">{formData.empresa}</strong> y la notificación ha sido remitida a nuestro equipo técnico. Un arquitecto de software se comunicará a <strong className="text-white font-medium">{formData.email}</strong> o por WhatsApp.
+                        Hemos registrado tu requerimiento para <strong className="text-white font-medium">{formData.empresa}</strong>. Un especialista técnico evaluará tu caso y nos comunicaremos contigo a <strong className="text-white font-medium">{formData.email}</strong> o vía WhatsApp.
                       </>
                     ) : (
                       <>
-                        We have recorded your requirements for <strong className="text-white font-medium">{formData.empresa}</strong>. Our engineering team has received the dispatch and will reach out to <strong className="text-white font-medium">{formData.email}</strong> or WhatsApp.
+                        We have recorded your requirements for <strong className="text-white font-medium">{formData.empresa}</strong>. A technical specialist will review your case and reach out to <strong className="text-white font-medium">{formData.email}</strong> or via WhatsApp.
                       </>
                     )}
                   </p>
@@ -559,7 +455,7 @@ export const BusinessContactForm: React.FC<BusinessContactFormProps> = ({ lang =
                       setFormData({
                         nombre: '',
                         empresa: '',
-                        email: googleUserEmail || '',
+                        email: '',
                         telefono: '',
                         mensaje: '',
                         website_trap: '',
