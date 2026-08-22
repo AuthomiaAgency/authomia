@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowRight, Check, AlertCircle, Building2, User, Instagram, Linkedin, Globe, Facebook, Twitter, MessageCircle, Youtube, Mail, Diamond, ArrowUpCircle, ArrowLeft, Github, Send, Sparkles, Cpu, Layers, Zap, Shield, Code, Database, Globe2 } from 'lucide-react';
+import { X, ArrowRight, Check, AlertCircle, Building2, User, Instagram, Linkedin, Globe, Facebook, Twitter, MessageCircle, Youtube, Mail, Diamond, ArrowUpCircle, ArrowLeft, Github, Send, Cpu, Layers, Zap, Shield, Code, Database, Globe2 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 
 // --- CONFIG ---
@@ -277,7 +277,7 @@ const QuestionnairePage: React.FC = () => {
                 </p>
                 <div className="w-full space-y-3">
                   <button onClick={() => handleUpsellDecision(true)} className="w-full py-4 bg-authomia-red text-white font-mono text-xs tracking-widest hover:bg-authomia-redLight transition-colors rounded-sm flex items-center justify-center gap-2">
-                    SÍ, ESCALAR A RED DIAMOND <Sparkles size={14} />
+                    SÍ, ESCALAR A RED DIAMOND <Zap size={14} />
                   </button>
                   <button onClick={() => handleUpsellDecision(false)} className="w-full py-3 bg-transparent text-white/40 font-mono text-xs hover:text-white transition-colors">
                     No, mantener Diagnóstico Blue

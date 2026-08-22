@@ -7,6 +7,21 @@
     <title>Authomia | Sistemas de Inteligencia & Automatización</title>
     <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/a/ACg8ocJm6J1CFWtP53KiJT18j3NSLQBU6bJpEOle5eMYXLMiSO8CbEw=s288-c-no" />
     
+    <script>
+      // Gracefully prevent benign ResizeObserver loop notices from triggering uncaught error handlers
+      window.addEventListener('error', function (e) {
+        var msg = e.message || (e.error && e.error.message) || '';
+        if (typeof msg === 'string' && (
+          msg.indexOf('ResizeObserver loop completed with undelivered notifications') !== -1 ||
+          msg.indexOf('ResizeObserver loop limit exceeded') !== -1
+        )) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          return true;
+        }
+      }, true);
+    </script>
+    
     <!-- SEO Meta Tags -->
     <meta name="description" content="Authomia Agency diseña sistemas vivos, escalables y medibles que convierten el caos operativo en orden estratégico. Expertos en Inteligencia Artificial y Automatización Empresarial." />
     <meta name="keywords" content="Authomia, Automatización, Inteligencia Artificial, Sistemas Empresariales, Consultoría Tecnológica, Transformación Digital, Blue Diamond, Red Diamond" />
@@ -30,14 +45,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              mono: ['Space Grotesk', 'monospace'],
+              sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+              serif: ['Newsreader', 'Georgia', 'serif'],
+              mono: ['"Space Grotesk"', 'monospace'],
             },
             colors: {
               authomia: {

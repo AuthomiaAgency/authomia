@@ -122,19 +122,25 @@ const Clients: React.FC<ClientsProps> = ({ content }) => {
       <div className="max-w-7xl mx-auto relative z-10">
          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div className="text-left">
-               <h2 className="text-3xl font-light text-white mb-4">{content.title}</h2>
-               <p className="text-white/40 max-w-2xl font-light">{content.subtitle}</p>
+               <h2 className="text-3xl sm:text-4xl font-medium text-white mb-3">
+                 Empresas & Marcas Aliadas
+               </h2>
+               <p className="text-white/60 max-w-2xl font-light text-base">
+                 Organizaciones y líderes que confían en nuestra ingeniería para escalar sus procesos y presencia digital.
+               </p>
             </div>
             <div className="flex gap-4">
                <button 
                  onClick={() => scroll('left')} 
-                 className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all"
+                 className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all"
+                 aria-label="Anterior"
                >
                  <ChevronRight className="w-5 h-5 rotate-180" />
                </button>
                <button 
                  onClick={() => scroll('right')} 
-                 className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all"
+                 className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all"
+                 aria-label="Siguiente"
                >
                  <ChevronRight className="w-5 h-5" />
                </button>

@@ -2,83 +2,125 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Content } from '../types';
 import { LOGO_TEXT_URL } from '../constants';
-import { ChevronRight } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Cpu, Code2, Globe2 } from 'lucide-react';
 
 interface HeroProps {
   content: Content['hero'];
+  lang?: 'es' | 'en';
   onCta: () => void;
 }
 
-const Hero: React.FC<HeroProps> = ({ content, onCta }) => {
-  return (
-    <section className="relative min-h-screen flex flex-col justify-center items-center px-6 overflow-hidden perspective-1000">
-      
-      {/* Background Neural Network Hint */}
-      <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
-         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] bg-authomia-blue/10 rounded-full blur-[120px] animate-pulse-slow mix-blend-screen" />
-         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50vw] h-[50vw] bg-authomia-red/5 rounded-full blur-[100px] animate-pulse-slow mix-blend-screen" style={{ animationDelay: '4s' }} />
-      </div>
+const Hero: React.FC<HeroProps> = ({ content, lang = 'es', onCta }) => {
+  const isEs = lang === 'es';
 
-      <div className="z-10 flex flex-col items-center gap-8 text-center max-w-5xl pt-10">
+  return (
+    <section className="relative min-h-[92vh] flex flex-col justify-center items-center px-6 pt-24 pb-16 overflow-hidden bg-[#030407]">
+      {/* Precision Background Geometry */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none" />
+      
+      {/* Subtle deep ambient tone */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-authomia-blue/10 rounded-full blur-[140px] pointer-events-none" />
+
+      <div className="relative z-10 flex flex-col items-center text-center max-w-5xl mx-auto">
         
-        {/* Breathing Logo - SMALLER, ELEGANT, HIGH POSITION */}
+        {/* Brand Logo Display */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: -20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-          className="relative mb-4 mt-0 w-full flex justify-center"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8 }}
+          className="mb-6"
         >
-           <img 
+          <img 
             src={LOGO_TEXT_URL} 
             alt="Authomia Agency" 
-            className="w-[120px] md:w-[150px] h-auto invert opacity-80 animate-pulse-slow object-contain" 
-            style={{ 
-              filter: 'invert(1) drop-shadow(0 0 15px rgba(10,16,158,0.5))',
-              transform: 'translateZ(0)' // HW accel
-            }}
-           />
+            className="w-[140px] md:w-[170px] h-auto invert opacity-90 object-contain mx-auto" 
+          />
         </motion.div>
 
-        {/* H1 - Smooth Fade Up */}
+        {/* Primary Headline */}
         <motion.h1
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          className="text-4xl md:text-6xl lg:text-7xl font-sans font-bold tracking-tight leading-[1.1] text-white drop-shadow-2xl"
+          transition={{ delay: 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="text-3xl sm:text-5xl md:text-6xl font-medium tracking-tight leading-[1.15] text-white max-w-4xl"
         >
-          {content.title}
+          {isEs ? (
+            <>
+              Infraestructura digital con <span className="font-serif italic font-normal text-white/90">precisión técnica</span> e inteligencia real.
+            </>
+          ) : (
+            <>
+              Digital infrastructure with <span className="font-serif italic font-normal text-white/90">technical precision</span> and applied intelligence.
+            </>
+          )}
         </motion.h1>
 
         {/* Subtitle */}
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          className="text-lg md:text-xl font-light text-white/70 max-w-3xl leading-relaxed"
+          transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-6 text-base sm:text-lg text-white/60 max-w-2xl leading-relaxed font-light"
         >
-          {content.subtitle}
+          {isEs ? (
+            <>
+              Diseñamos plataformas web, automatización de procesos e integraciones de IA que transforman fricciones operativas en <span className="text-white/80">activos escalables</span>.
+            </>
+          ) : (
+            <>
+              We engineer web platforms, process automation, and applied AI systems that turn operational frictions into <span className="text-white/80">scalable digital assets</span>.
+            </>
+          )}
         </motion.p>
 
-        {/* CTA */}
+        {/* Actions Bar */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7, duration: 0.8 }}
-          className="mt-10 pb-10" 
+          transition={{ delay: 0.45, duration: 0.7 }}
+          className="mt-10 flex flex-col sm:flex-row items-center gap-4"
         >
           <button 
             onClick={onCta}
-            className="group relative flex items-center gap-3 px-10 py-5 bg-[#050505] border border-white/10 text-white font-mono text-sm tracking-[0.2em] uppercase transition-all duration-500 hover:border-authomia-blue/50 hover:shadow-[0_0_40px_rgba(10,16,158,0.3)] rounded-sm overflow-hidden"
+            className="w-full sm:w-auto px-7 py-3.5 bg-white text-[#050505] hover:bg-white/90 font-medium text-sm rounded-lg transition-all duration-300 shadow-sm flex items-center justify-center gap-2 group cursor-pointer"
           >
-            {/* Inner Glow via pseudo element inside */}
-            <div className="absolute inset-0 bg-authomia-blue/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            
-            <span className="relative z-10 flex items-center gap-3 font-semibold">
-              {content.ctaPrimary}
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </span>
+            <span>{isEs ? 'Explorar Servicios' : 'Explore Services'}</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
+          
+          <a
+            href="#contacto-directo"
+            className="w-full sm:w-auto px-7 py-3.5 bg-white/[0.03] hover:bg-white/[0.08] text-white border border-white/10 hover:border-white/20 font-medium text-sm rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
+          >
+            {isEs ? 'Iniciar Consulta' : 'Start Consultation'}
+          </a>
         </motion.div>
+
+        {/* Enterprise Highlights Strip */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.65, duration: 0.8 }}
+          className="mt-16 pt-8 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10 w-full max-w-4xl"
+        >
+          <div className="flex items-center justify-center gap-2.5 text-white/50 text-xs font-mono">
+            <Code2 className="w-4 h-4 text-white/70" />
+            <span>{isEs ? 'Desarrollo a Medida' : 'Custom Engineering'}</span>
+          </div>
+          <div className="flex items-center justify-center gap-2.5 text-white/50 text-xs font-mono">
+            <Cpu className="w-4 h-4 text-white/70" />
+            <span>{isEs ? 'Integración IA Aplicada' : 'Applied AI Systems'}</span>
+          </div>
+          <div className="flex items-center justify-center gap-2.5 text-white/50 text-xs font-mono">
+            <Globe2 className="w-4 h-4 text-white/70" />
+            <span>{isEs ? 'Visibilidad y Conversión' : 'Conversion & Scale'}</span>
+          </div>
+          <div className="flex items-center justify-center gap-2.5 text-white/50 text-xs font-mono">
+            <ShieldCheck className="w-4 h-4 text-white/70" />
+            <span>{isEs ? 'Seguridad & Soberanía' : 'Security & Ownership'}</span>
+          </div>
+        </motion.div>
+
       </div>
     </section>
   );

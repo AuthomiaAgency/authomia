@@ -31,5 +31,13 @@ service cloud.firestore {
       allow create: if true; // Anyone can submit an application
       allow read, update, delete: if isAuthenticated(); // Only team members can manage them
     }
+
+    // Direct Business Contact Inquiries
+    match /contact_inquiries/{inquiryId} {
+      allow create: if request.resource.data.email is string
+                    && request.resource.data.nombre is string
+                    && request.resource.data.mensaje is string;
+      allow read, update, delete: if isAuthenticated();
+    }
   }
 }

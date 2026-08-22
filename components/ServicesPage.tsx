@@ -1,180 +1,319 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Content } from '../types';
+import { Content, Language } from '../types';
 import { 
-  Diamond, ChevronDown, Brain, Bot, MessageSquare, Headphones, 
-  FileText, Cpu, TrendingUp, Megaphone, BarChart3, Code, Link, ShieldCheck, ArrowLeft 
+  ChevronDown, 
+  ArrowRight, 
+  FileCode2, 
+  Server, 
+  Database, 
+  LayoutDashboard, 
+  Code2, 
+  ShieldCheck,
+  MessageSquare, 
+  Bot, 
+  FileSearch, 
+  CalendarCheck2, 
+  BrainCircuit, 
+  Lock,
+  Network, 
+  Boxes, 
+  Receipt, 
+  Truck, 
+  Zap, 
+  RefreshCw,
+  Layout, 
+  Palette, 
+  BarChart3, 
+  Filter, 
+  Gauge, 
+  Target
 } from 'lucide-react';
-import { LOGO_ICON_URL } from '../constants';
+import Navbar from './Navbar';
+import { CONTENT, LOGO_ICON_URL } from '../constants';
 
 interface ServicesPageProps {
-  content: Content;
+  content?: Content;
 }
 
-const iconMap: Record<string, React.ElementType> = {
-  Brain, Bot, MessageSquare, Headphones, FileText, Cpu, TrendingUp, Megaphone, BarChart3, Code, Link, ShieldCheck
-};
+interface ServiceBlock {
+  name: string;
+  nameEn: string;
+  icon: React.ElementType;
+}
 
-const ServicesPage: React.FC<ServicesPageProps> = ({ content }) => {
+interface Division {
+  id: string;
+  title: string;
+  titleEn: string;
+  categoryTag: string;
+  categoryTagEn: string;
+  services: ServiceBlock[];
+}
+
+const SERVICE_DIVISIONS: Division[] = [
+  {
+    id: "web-cloud",
+    title: "Arquitectura Web & Plataformas Cloud",
+    titleEn: "Web Architecture & Cloud Platforms",
+    categoryTag: "Desarrollo de Software & Infraestructura",
+    categoryTagEn: "Software Engineering & Infrastructure",
+    services: [
+      { name: "Frontend React & Next.js", nameEn: "React & Next.js Frontend", icon: FileCode2 },
+      { name: "Backend & Microservicios", nameEn: "Backend & Microservices", icon: Server },
+      { name: "Bases de Datos Relacionales", nameEn: "Relational Databases", icon: Database },
+      { name: "Paneles de Control & Roles", nameEn: "Custom Dashboards & RBAC", icon: LayoutDashboard },
+      { name: "Optimización SEO & Core Vitals", nameEn: "SEO & Core Web Vitals", icon: Code2 },
+      { name: "Repositorio & Soberanía Total", nameEn: "Code Sovereignty Handover", icon: ShieldCheck }
+    ]
+  },
+  {
+    id: "ai-agents",
+    title: "Inteligencia Operativa & Asistentes Autónomos",
+    titleEn: "Applied AI & Autonomous Agents",
+    categoryTag: "Modelos de IA & Procesamiento Natural",
+    categoryTagEn: "AI Models & Natural Language Processing",
+    services: [
+      { name: "Asistentes WhatsApp 24/7", nameEn: "24/7 WhatsApp AI Agents", icon: MessageSquare },
+      { name: "Calificación Automática de Leads", nameEn: "Automated Lead Qualification", icon: Bot },
+      { name: "Extracción de Facturas y PDF", nameEn: "Document & Invoices OCR", icon: FileSearch },
+      { name: "Agendamiento Inteligente", nameEn: "Smart Calendar Booking", icon: CalendarCheck2 },
+      { name: "Integración de Modelos LLM", nameEn: "LLM Fine-Tuning & APIs", icon: BrainCircuit },
+      { name: "Blindaje y Privacidad de Datos", nameEn: "Enterprise Data Privacy", icon: Lock }
+    ]
+  },
+  {
+    id: "workflows",
+    title: "Automatización & Sincronización de Flujos",
+    titleEn: "Workflow Automation & System Sync",
+    categoryTag: "Interconexión de Sistemas & Procesos",
+    categoryTagEn: "System Interconnection & Processes",
+    services: [
+      { name: "Conexión CRM, ERP y Software", nameEn: "CRM & ERP Integration", icon: Network },
+      { name: "Sincronización de Inventarios", nameEn: "Multi-Store Inventory Sync", icon: Boxes },
+      { name: "Facturación y Cobro Automático", nameEn: "Automated Billing & Invoices", icon: Receipt },
+      { name: "Enrutamiento de Pedidos", nameEn: "Order & Dispatch Routing", icon: Truck },
+      { name: "Disparadores y Webhooks", nameEn: "Webhooks & Real-time Triggers", icon: Zap },
+      { name: "Eliminación de Tareas Manuales", nameEn: "Manual Task Eradication", icon: RefreshCw }
+    ]
+  },
+  {
+    id: "conversion",
+    title: "Infraestructura Comercial & Conversión",
+    titleEn: "Commercial Infrastructure & Conversion",
+    categoryTag: "Captación B2B & Activos de Venta",
+    categoryTagEn: "B2B Acquisition & Sales Assets",
+    services: [
+      { name: "Landing Pages de Alto Impacto", nameEn: "High-Performance Landing Pages", icon: Layout },
+      { name: "Identidad Visual Corporativa", nameEn: "Corporate Visual Identity", icon: Palette },
+      { name: "Dashboards BI de Ventas", nameEn: "Sales & Pipeline Dashboards", icon: BarChart3 },
+      { name: "Embudos de Captación B2B", nameEn: "B2B Acquisition Funnels", icon: Filter },
+      { name: "Rendimiento Web Sub-Segundo", nameEn: "Sub-Second Speed Execution", icon: Gauge },
+      { name: "Trazabilidad de Cierres", nameEn: "Conversion & Deal Tracking", icon: Target }
+    ]
+  }
+];
+
+export const ServicesPage: React.FC<ServicesPageProps> = () => {
+  const [lang, setLang] = useState<Language>('es');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
-  const { detailedServices, faq } = content;
-
-  if (!detailedServices) return null;
+  const isEs = lang === 'es';
+  const currentContent = CONTENT[lang];
+  const { faq } = currentContent;
 
   return (
-    <div className="min-h-screen bg-[#020202] text-white font-sans selection:bg-authomia-blue selection:text-white">
-      {/* Navbar */}
-      <nav className="fixed top-0 left-0 w-full z-50 bg-[#020202]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-3 group">
-            <img src={LOGO_ICON_URL || "https://imgur.com/R48vhCC.png"} className="w-8 h-8 opacity-90 group-hover:opacity-100 transition-opacity" alt="Authomia" />
-            <span className="font-mono text-sm tracking-widest font-bold hidden sm:block">AUTHOMIA</span>
-          </a>
-          
-          <div>
-             <a href="/" className="text-[10px] font-mono uppercase tracking-widest text-white/60 hover:text-white transition-colors flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full border border-white/10 backdrop-blur-md">
-               <ArrowLeft size={14} /> Volver al Inicio
-             </a>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-[#030407] text-white font-sans selection:bg-white selection:text-black">
+      <Navbar lang={lang} setLang={setLang} />
 
-      <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
+      <main className="pt-32 pb-24 px-6 max-w-7xl mx-auto">
         
-        {/* Header */}
-        <div className="text-center mb-24">
+        {/* Header without labels above the title */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
           <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-6xl font-light mb-6"
+            className="text-3xl sm:text-4xl md:text-5xl font-medium tracking-tight text-white mb-3 leading-tight"
           >
-            Arquitectura de Servicios
+            {isEs ? (
+              <>
+                Desglose de Servicios & <span className="font-serif italic font-normal text-white/90">Preguntas Frecuentes</span>
+              </>
+            ) : (
+              <>
+                Services Breakdown & <span className="font-serif italic font-normal text-white/90">Frequently Asked Questions</span>
+              </>
+            )}
           </motion.h1>
           <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-white/40 font-mono text-xs uppercase tracking-[0.2em] max-w-2xl mx-auto leading-relaxed"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            className="text-xs sm:text-sm text-white/50 font-light leading-relaxed"
           >
-            Desglose técnico de nuestros protocolos de intervención. <br/>
-            Desde el diagnóstico estratégico hasta la implementación de sistemas autónomos.
+            {isEs 
+              ? 'Arquitectura modular para digitalizar, optimizar e interconectar cada proceso crítico de tu empresa.'
+              : 'Modular architecture designed to digitize, streamline, and integrate every mission-critical process.'}
           </motion.p>
         </div>
 
-        {/* Blue Diamond Section */}
-        <div className="mb-32">
-          <div className="flex items-center gap-4 mb-12 border-b border-white/10 pb-6">
-            <div className="w-12 h-12 bg-authomia-blue/10 border border-authomia-blue/30 flex items-center justify-center rounded-sm">
-              <Diamond className="w-6 h-6 text-authomia-blueLight" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-mono text-authomia-blueLight tracking-tight">{detailedServices.blue.title}</h2>
-              <p className="text-sm text-white/60 font-light mt-1">{detailedServices.blue.description}</p>
-            </div>
-          </div>
+        {/* 4 Clean Divisions */}
+        <div className="space-y-10 mb-20">
+          {SERVICE_DIVISIONS.map((div, idx) => (
+            <motion.div
+              key={div.id}
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35, delay: idx * 0.05 }}
+              className="p-6 sm:p-8 rounded-2xl bg-[#06080e] border border-white/10 shadow-2xl"
+            >
+              {/* Header with clean typography */}
+              <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-4">
+                <h2 className="text-lg sm:text-2xl font-medium text-white tracking-tight">
+                  {isEs ? div.title : div.titleEn}
+                </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {detailedServices.blue.items.map((item, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-                className="p-8 border border-white/10 bg-[#08090B] rounded-sm hover:border-authomia-blue/30 transition-colors group"
-              >
-                <h3 className="text-lg font-medium text-white mb-3 group-hover:text-authomia-blueLight transition-colors">{item.title}</h3>
-                <p className="text-sm text-white/50 font-light leading-relaxed">{item.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
+                <span className="text-[11px] font-mono uppercase tracking-widest text-white/40">
+                  {isEs ? div.categoryTag : div.categoryTagEn}
+                </span>
+              </div>
 
-        {/* Red Diamond Section */}
-        <div className="mb-32">
-          <div className="flex items-center gap-4 mb-12 border-b border-white/10 pb-6">
-            <div className="w-12 h-12 bg-authomia-red/10 border border-authomia-red/30 flex items-center justify-center rounded-sm">
-              <Diamond className="w-6 h-6 text-authomia-redLight" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-mono text-authomia-redLight tracking-tight">{detailedServices.red.title}</h2>
-              <p className="text-sm text-white/60 font-light mt-1">{detailedServices.red.description}</p>
-            </div>
-          </div>
+              {/* Clean separator line */}
+              <div className="w-full h-px bg-white/10 mb-6" />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {detailedServices.red.items.map((item, idx) => {
-              const Icon = iconMap[item.icon] || Code;
-              return (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: idx * 0.05 }}
-                  whileHover={{ y: -5 }}
-                  className="p-8 border border-white/10 bg-[#08090B] rounded-sm hover:border-authomia-red/40 transition-all duration-300 group relative overflow-hidden"
+              {/* Grid of 3 blocks per row with precise icons & clean typography */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {div.services.map((srv, sIdx) => {
+                  const IconComp = srv.icon;
+                  return (
+                    <div
+                      key={sIdx}
+                      className="p-3.5 sm:p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/20 hover:bg-white/[0.04] transition-all flex items-center gap-3.5 group"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white/70 group-hover:text-white group-hover:scale-105 transition-all shrink-0">
+                        <IconComp className="w-4 h-4" strokeWidth={1.5} />
+                      </div>
+                      <span className="text-xs sm:text-sm font-medium text-white/85 group-hover:text-white transition-colors">
+                        {isEs ? srv.name : srv.nameEn}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Quick request link */}
+              <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between">
+                <span className="text-[11px] font-mono text-white/35">
+                  {isEs ? 'Entregable con código propio y sin pagos mensuales' : '100% proprietary code with zero recurring fees'}
+                </span>
+                <a
+                  href="/#contacto-directo"
+                  className="text-xs font-mono text-white/70 hover:text-white flex items-center gap-1.5 transition-colors"
                 >
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Icon size={48} />
-                  </div>
-                  <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center mb-6 group-hover:bg-authomia-red/20 transition-colors">
-                    <Icon size={20} className="text-white/70 group-hover:text-authomia-redLight transition-colors" />
-                  </div>
-                  <h3 className="text-lg font-medium text-white mb-3 pr-8">{item.title}</h3>
-                  <p className="text-sm text-white/50 font-light leading-relaxed">{item.desc}</p>
-                </motion.div>
-              );
-            })}
-          </div>
+                  <span>{isEs ? 'Cotizar esta división' : 'Request this division'}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </a>
+              </div>
+
+            </motion.div>
+          ))}
         </div>
 
         {/* FAQ Section */}
-        <div className="max-w-4xl mx-auto" id="faq">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-light text-white mb-4">{faq.title}</h2>
-            <div className="h-1 w-20 bg-authomia-blueLight mx-auto rounded-full" />
-          </div>
-          
-          <div className="space-y-4">
-            {faq.items.map((item, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className="border border-white/10 bg-[#08090B] rounded-sm overflow-hidden hover:border-white/20 transition-colors"
-              >
-                <button 
-                  onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
-                  className="w-full flex justify-between items-center p-6 text-left hover:bg-white/5 transition-colors group"
+        {faq && faq.items && faq.items.length > 0 && (
+          <div className="max-w-3xl mx-auto mb-20" id="faq">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl sm:text-3xl font-medium text-white mb-2">
+                {faq.title || (isEs ? 'Preguntas Frecuentes' : 'Frequently Asked Questions')}
+              </h2>
+              <p className="text-xs sm:text-sm text-white/50 font-light">
+                {isEs 
+                  ? 'Respuestas directas a consultas sobre propiedad del código, metodología y soporte.'
+                  : 'Direct answers to questions regarding code ownership, delivery timeline, and engineering support.'}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {faq.items.map((item, i) => (
+                <div 
+                  key={i} 
+                  className="border border-white/10 rounded-xl bg-[#06080e] overflow-hidden transition-all"
                 >
-                  <span className="text-base font-medium text-white/90 pr-8 group-hover:text-authomia-blueLight transition-colors">{item.question}</span>
-                  <ChevronDown className={`w-5 h-5 text-white/40 transition-transform duration-300 ${expandedFaq === i ? 'rotate-180 text-authomia-blueLight' : ''}`} />
-                </button>
-                <AnimatePresence>
-                  {expandedFaq === i && (
-                    <motion.div 
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="p-6 pt-0 text-base text-white/60 font-light leading-relaxed border-t border-white/5">
+                  <button
+                    onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
+                    className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 hover:bg-white/[0.02] transition-colors cursor-pointer"
+                  >
+                    <span className="text-xs sm:text-sm font-medium text-white/90">{item.question}</span>
+                    <ChevronDown 
+                      size={16} 
+                      className={`text-white/40 transition-transform duration-200 shrink-0 ${
+                        expandedFaq === i ? 'rotate-180 text-white' : ''
+                      }`} 
+                    />
+                  </button>
+                  <AnimatePresence>
+                    {expandedFaq === i && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="px-4 sm:px-5 pb-5 text-xs text-white/60 leading-relaxed font-light border-t border-white/5 pt-3"
+                      >
                         {item.answer}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
           </div>
+        )}
+
+        {/* Direct CTA */}
+        <div className="p-8 sm:p-10 rounded-2xl bg-[#06080e] border border-white/10 text-center max-w-2xl mx-auto shadow-xl">
+          <h3 className="text-xl sm:text-2xl font-medium text-white mb-2">
+            {isEs ? '¿Quieres evaluar una solución técnica para tu empresa?' : 'Looking for a custom engineering architecture?'}
+          </h3>
+          <p className="text-xs sm:text-sm text-white/50 font-light mb-6">
+            {isEs 
+              ? 'Analizamos tus procesos actuales y te entregamos un plan técnico claro con cotización transparente.'
+              : 'We analyze your workflows and present a clear technical blueprint with transparent pricing.'}
+          </p>
+          <a
+            href="/#contacto-directo"
+            className="inline-flex items-center gap-2 px-7 py-3 bg-white text-black font-medium text-xs rounded-xl hover:bg-white/90 transition-all shadow-lg"
+          >
+            <span>{isEs ? 'Iniciar Consulta Directa' : 'Initiate Consultation'}</span>
+            <ArrowRight size={14} />
+          </a>
         </div>
 
-      </div>
+      </main>
+
+      {/* Synchronized Footer */}
+      <footer className="border-t border-white/10 bg-[#040508] pt-12 pb-8 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2.5">
+            <img src={LOGO_ICON_URL} alt="Authomia" className="w-5 h-5 opacity-90" />
+            <span className="font-mono tracking-[0.2em] text-xs text-white font-bold">AUTHOMIA</span>
+          </div>
+          <div className="flex flex-wrap justify-center items-center gap-6 text-xs font-mono text-white/50">
+            <a href="/" className="hover:text-white transition-colors">{isEs ? 'Inicio' : 'Home'}</a>
+            <a href="/#servicios" className="hover:text-white transition-colors">{isEs ? 'Servicios' : 'Services'}</a>
+            <a href="/servicios" className="text-white font-medium">{isEs ? 'Detalles & FAQ' : 'Details & FAQ'}</a>
+            <a href="/quienes-somos" className="hover:text-white transition-colors">{isEs ? 'Quiénes Somos' : 'Who We Are'}</a>
+            <a href="/#reseñas" className="hover:text-white transition-colors">{isEs ? 'Reseñas' : 'Reviews'}</a>
+            <a href="/#contacto-directo" className="hover:text-white transition-colors">{isEs ? 'Contacto' : 'Contact'}</a>
+          </div>
+          <span className="text-xs text-white/40 font-mono">
+            © {new Date().getFullYear()} Authomia
+          </span>
+        </div>
+      </footer>
     </div>
   );
 };
 
 export default ServicesPage;
+

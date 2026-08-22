@@ -10,52 +10,60 @@ export const SUBDOMAIN_URL = "https://insights.authomia.cloud";
 export const CONTENT: Record<Language, Content> = {
   es: {
     hero: {
-      title: "Inteligencia y Automatización para Empresas del Mercado",
-      subtitle: "Diagnóstico, arquitectura e implementación de sistemas digitales escalables.",
-      ctaPrimary: "¿Qué podemos ofrecerle a tu negocio?",
+      title: "Arquitectura Digital e Inteligencia Estratégica para Empresas",
+      subtitle: "Diseño, ingeniería e integración de plataformas web de alto rendimiento, sistemas de inteligencia aplicada y optimización operativa para empresas en crecimiento.",
+      ctaPrimary: "Conocer Soluciones Corporativas",
     },
     intro: {
-      title: "Sistema Authomia",
-      description: "Authomia Agency no vende software, bots ni soluciones genéricas. Diseña sistemas vivos, escalables y medibles que convierten el caos operativo en orden estratégico.",
+      title: "Metodología Authomia",
+      description: "Authomia Agency no implementa herramientas aisladas ni promesas genéricas. Diseñamos infraestructura digital sólida, plataformas web modernas e integraciones de inteligencia que maximizan la visibilidad, reducen costos operativos y escalan con el negocio.",
       cards: [
-        { title: "Estrategia", desc: "Visión de alto nivel" },
-        { title: "Procesos", desc: "Arquitectura de flujos" },
-        { title: "Tecnología", desc: "Automatización e IA" },
-        { title: "Personas", desc: "Adopción y cultura" },
+        { title: "Arquitectura Web & Plataformas", desc: "Desarrollo de portales, sistemas web y experiencias digitales de alto impacto comercial." },
+        { title: "Integración de Inteligencia Artificial", desc: "Modelos y asistentes aplicados a operaciones, atención al cliente y gestión de datos." },
+        { title: "Optimización de Procesos", desc: "Automatización de flujos comerciales, administrativos y logísticos con control total." },
+        { title: "Estrategia & Visibilidad de Marca", desc: "Posicionamiento técnico, presencia digital corporativa y conversión medible." },
       ]
     },
     comparison: {
-      title: "¿Por qué Authomia?",
+      title: "Criterio de Ingeniería vs. Enfoques Tradicionales",
       left: {
-        title: "Otras Agencias",
-        items: ["Automatizan sin entender", "Implementan herramientas aisladas", "Promesas rápidas", "Sin visión sistémica"]
+        title: "Agencias Convencionales",
+        items: [
+          "Plantillas genéricas y software sin personalización",
+          "Herramientas desconectadas que generan fricción",
+          "Promesas rápidas sin auditoría previa",
+          "Falta de soporte y arquitectura escalable"
+        ]
       },
       right: {
         title: "Authomia Agency",
-        items: ["Diagnóstico profundo", "Sistemas integrados", "Escalabilidad real", "Criterio técnico y humano"]
+        items: [
+          "Arquitectura a la medida de los objetivos del negocio",
+          "Sistemas integrados con seguridad y trazabilidad",
+          "Diagnóstico riguroso antes de cualquier desarrollo",
+          "Soberanía tecnológica, código limpio y alta disponibilidad"
+        ]
       }
     },
     protocols: {
-      title: "Protocolos de Trabajo",
-      description: "Nuestro proceso está diseñado para reducir incertidumbre, optimizar decisiones y garantizar claridad antes de cualquier implementación.",
-      pillarsTitle: "Los 4 Pilares de Evaluación",
+      title: "Protocolos de Trabajo Corporativo",
+      description: "Un proceso estructurado en fases para garantizar previsibilidad técnica, cumplimiento de tiempos y retorno claro sobre la inversión.",
+      pillarsTitle: "Pilares de Intervención",
       pillars: [
-        { title: "Administración", icon: "FileText", desc: ["Procesos internos", "Control operativo", "Trazabilidad"] },
-        { title: "Marketing", icon: "Megaphone", desc: ["Posicionamiento", "Canales", "Automatización"] },
-        { title: "Ventas", icon: "TrendingUp", desc: ["Procesos comerciales", "Embudos", "Integración CRM"] },
-        { title: "Fulfillment", icon: "Package", desc: ["Entrega de servicio", "Logística", "Post-venta"] },
+        { title: "Administración", icon: "FileText", desc: ["Procesos internos", "Control operativo", "Trazabilidad de datos"] },
+        { title: "Presencia & Visibilidad", icon: "Megaphone", desc: ["Plataformas web", "Posicionamiento", "Canales digitales"] },
+        { title: "Ventas & Conversión", icon: "TrendingUp", desc: ["Embudos comerciales", "Integración CRM", "Seguimiento ágil"] },
+        { title: "Operaciones & Soporte", icon: "Package", desc: ["Entrega de servicio", "Automatización de atención", "Post-venta"] },
       ],
       steps: [
-        { phase: "Fase 00", title: "Contacto y Filtrado Inicial", details: ["Solicitud vía formulario (Blue/Red Diamond)", "Validación de viabilidad técnica", "Filtrado de perfil de cliente"], type: "neutral", icon: "Filter" },
-        { phase: "Fase 01", title: "Primera Reunión (Contexto)", details: ["Comprensión del negocio global", "Historia operativa", "Detección de fricciones", "NO se venden soluciones aquí"], type: "neutral", icon: "Users" },
-        { phase: "Fase 02", title: "Diagnóstico y Modelado", details: ["Análisis de los 4 Pilares", "Modelado de flujos y cuellos de botella", "Definición de arquitectura", "Estimación de costos"], type: "blue", icon: "Activity" },
-        { phase: "Fase 03", title: "Presentación de Diagnóstico", details: ["Dashboard de hallazgos", "Explicación de arquitectura propuesta", "Escenarios de inversión", "Cliente decide si avanza"], type: "neutral", icon: "Monitor" },
-        { phase: "Fase 04", title: "Activación (Red Diamond)", details: ["Definición de alcance final", "Cronograma de implementación", "Asignación de responsables", "Priorización por pilar"], type: "red", icon: "Zap" },
-        { phase: "Fase 05", title: "Autorización e Insumos", details: ["Entrega formal de accesos y APIs", "Firma de acuerdos de confidencialidad", "Recolección de data operativa"], type: "red", icon: "Lock" },
-        { phase: "Fase 06", title: "Implementación y Validación", details: ["Despliegue por bloques", "Validación en entorno real", "Ajustes controlados", "Documentación técnica"], type: "red", icon: "Layers" },
-        { phase: "Fase 07", title: "Cierre y Transferencia", details: ["Entrega de sistemas estabilizados", "Capacitación final", "Lineamientos de evolución"], type: "gold", icon: "CheckCircle" },
+        { phase: "Fase 01", title: "Evaluación y Alcance Inicial", details: ["Revisión del modelo de negocio", "Levantamiento de requerimientos y objetivos", "Validación de factibilidad técnica"], type: "neutral", icon: "Filter" },
+        { phase: "Fase 02", title: "Diagnóstico y Arquitectura de Solución", details: ["Auditoría de sistemas existentes", "Diseño de la infraestructura y flujos de trabajo", "Plan maestro y estimación transparente"], type: "blue", icon: "Activity" },
+        { phase: "Fase 03", title: "Presentación y Validación Estratégica", details: ["Revisión ejecutiva de hallazgos y propuesta", "Demostración de arquitectura y alcance", "Aprobación formal del cronograma"], type: "neutral", icon: "Monitor" },
+        { phase: "Fase 04", title: "Ingeniería y Desarrollo por Bloques", details: ["Construcción de módulos y plataformas", "Integración de APIs e inteligencia aplicada", "Pruebas continuas de rendimiento y seguridad"], type: "red", icon: "Zap" },
+        { phase: "Fase 05", title: "Despliegue Controlado y Validación", details: ["Puesta en marcha en entorno productivo", "Pruebas de estrés y validación con usuarios reales", "Ajustes de precisión y estabilización"], type: "red", icon: "Layers" },
+        { phase: "Fase 06", title: "Transferencia y Soporte Continuo", details: ["Entrega de documentación técnica completa", "Capacitación a los equipos del cliente", "Mantenimiento y evolución de sistemas"], type: "gold", icon: "CheckCircle" },
       ],
-      closure: "Authomia no improvisa procesos ni ejecuta sin estructura. Cada proyecto sigue este protocolo para garantizar orden, coherencia y sostenibilidad operativa."
+      closure: "La disciplina técnica y la claridad en la comunicación son la base de cada desarrollo en Authomia Agency."
     },
     whoWeAre: {
       title: "Quiénes Somos",
@@ -345,52 +353,60 @@ export const CONTENT: Record<Language, Content> = {
   },
   en: {
     hero: {
-      title: "Intelligence & Automation for Market Enterprises",
-      subtitle: "Diagnosis, architecture, and implementation of scalable digital systems.",
-      ctaPrimary: "What can we offer your business?",
+      title: "Digital Architecture & Applied Intelligence for Enterprises",
+      subtitle: "Engineering and integration of high-performance web platforms, applied AI systems, and operational optimization for scaling businesses.",
+      ctaPrimary: "Explore Enterprise Solutions",
     },
     intro: {
-      title: "The Authomia System",
-      description: "Authomia Agency does not sell software, bots, or generic solutions. We design living, scalable, and measurable systems that turn operational chaos into strategic order.",
+      title: "The Authomia Methodology",
+      description: "Authomia Agency designs robust digital infrastructure, modern web platforms, and tailored intelligence integrations that maximize visibility, reduce operational overhead, and scale sustainably.",
       cards: [
-        { title: "Strategy", desc: "High-level vision" },
-        { title: "Processes", desc: "Workflow architecture" },
-        { title: "Technology", desc: "Automation & AI" },
-        { title: "People", desc: "Adoption & culture" },
+        { title: "Web Architecture & Platforms", desc: "Engineering high-impact portals, web applications, and digital business platforms." },
+        { title: "Enterprise AI Integration", desc: "Applied models and assistants for customer operations, workflow automation, and data insight." },
+        { title: "Process Optimization", desc: "End-to-end automation of commercial, administrative, and fulfillment workflows with complete control." },
+        { title: "Strategic Visibility & Growth", desc: "Technical brand positioning, digital footprint enhancement, and measurable conversion." },
       ]
     },
     comparison: {
-      title: "Why Authomia?",
+      title: "Engineering Discipline vs. Conventional Approaches",
       left: {
-        title: "Other Agencies",
-        items: ["Automate without understanding", "Implement isolated tools", "Quick promises", "No systemic vision"]
+        title: "Traditional Agencies",
+        items: [
+          "Generic templates and uncustomized off-the-shelf tools",
+          "Disconnected software causing team friction",
+          "Quick promises with no prior structural diagnosis",
+          "Zero code ownership or long-term architecture"
+        ]
       },
       right: {
         title: "Authomia Agency",
-        items: ["Deep diagnosis", "Integrated systems", "Real scalability", "Technical & human criteria"]
+        items: [
+          "Custom engineering aligned directly with business goals",
+          "Unified systems with enterprise security and traceability",
+          "Rigorous diagnosis and blueprint before any deployment",
+          "Complete technological sovereignty and scalable infrastructure"
+        ]
       }
     },
     protocols: {
-      title: "Work Protocols",
-      description: "Our process is designed to reduce uncertainty, optimize decisions, and guarantee clarity before any implementation.",
-      pillarsTitle: "The 4 Evaluation Pillars",
+      title: "Corporate Work Protocols",
+      description: "A structured phase-by-phase framework ensuring technical predictability, timely execution, and clear return on investment.",
+      pillarsTitle: "Core Execution Pillars",
       pillars: [
-        { title: "Administration", icon: "FileText", desc: ["Internal processes", "Ops control", "Traceability"] },
-        { title: "Marketing", icon: "Megaphone", desc: ["Positioning", "Channels", "Automation"] },
-        { title: "Sales", icon: "TrendingUp", desc: ["Sales processes", "Funnels", "CRM Integration"] },
-        { title: "Fulfillment", icon: "Package", desc: ["Service delivery", "Logistics", "Post-sales"] },
+        { title: "Administration", icon: "FileText", desc: ["Internal operations", "Process control", "Data traceability"] },
+        { title: "Presence & Visibility", icon: "Megaphone", desc: ["Web platforms", "Positioning", "Digital channels"] },
+        { title: "Sales & Conversion", icon: "TrendingUp", desc: ["Commercial funnels", "CRM Integration", "Lead tracking"] },
+        { title: "Operations & Support", icon: "Package", desc: ["Service delivery", "Support automation", "Post-sales"] },
       ],
       steps: [
-        { phase: "Phase 00", title: "Contact & Initial Filter", details: ["Request via form (Blue/Red Diamond)", "Technical viability check", "Client profile filtering"], type: "neutral", icon: "Filter" },
-        { phase: "Phase 01", title: "First Meeting (Context)", details: ["Global business understanding", "Operational history", "Friction detection", "NO solutions sold here"], type: "neutral", icon: "Users" },
-        { phase: "Phase 02", title: "Diagnosis & Modeling", details: ["4 Pillars Analysis", "Flow & bottleneck modeling", "Architecture definition", "Cost estimation"], type: "blue", icon: "Activity" },
-        { phase: "Phase 03", title: "Diagnosis Presentation", details: ["Findings dashboard", "Proposed architecture explanation", "Investment scenarios", "Client decides next step"], type: "neutral", icon: "Monitor" },
-        { phase: "Phase 04", title: "Activation (Red Diamond)", details: ["Final scope definition", "Implementation timeline", "Role assignment", "Pillar prioritization"], type: "red", icon: "Zap" },
-        { phase: "Phase 05", title: "Auth & Inputs", details: ["Formal access & API handover", "NDA signing", "Operational data collection"], type: "red", icon: "Lock" },
-        { phase: "Phase 06", title: "Implementation & Validation", details: ["Block deployment", "Real-environment validation", "Controlled adjustments", "Technical documentation"], type: "red", icon: "Layers" },
-        { phase: "Phase 07", title: "Cierre & Transfer", details: ["Stabilized system delivery", "Final training", "Evolution guidelines"], type: "gold", icon: "CheckCircle" },
+        { phase: "Phase 01", title: "Assessment & Scoping", details: ["Business model evaluation", "Requirements and KPI alignment", "Technical feasibility audit"], type: "neutral", icon: "Filter" },
+        { phase: "Phase 02", title: "Diagnosis & Solution Architecture", details: ["Legacy systems audit", "Infrastructure and flow blueprinting", "Detailed master plan and transparent pricing"], type: "blue", icon: "Activity" },
+        { phase: "Phase 03", title: "Executive Validation & Alignment", details: ["Presentation of findings and architecture", "Scope confirmation and milestone sign-off", "Client approval to proceed"], type: "neutral", icon: "Monitor" },
+        { phase: "Phase 04", title: "Modular Engineering & Build", details: ["Component and platform development", "API & applied intelligence integration", "Continuous security and performance testing"], type: "red", icon: "Zap" },
+        { phase: "Phase 05", title: "Controlled Deployment & Validation", details: ["Staging-to-production rollout", "Stress testing and real-user validation", "Fine-tuning and system stabilization"], type: "red", icon: "Layers" },
+        { phase: "Phase 06", title: "Handover & Ongoing Support", details: ["Complete technical documentation delivery", "Team training and operations manual", "Evolution roadmap and continuous maintenance"], type: "gold", icon: "CheckCircle" },
       ],
-      closure: "Authomia does not improvise processes or execute without structure. Every project follows this protocol to guarantee order, coherence, and operational sustainability."
+      closure: "Technical discipline and clear communication form the bedrock of every development at Authomia Agency."
     },
     whoWeAre: {
       title: "Who We Are",
